@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+from enum import Enum
 
 from redis import Redis
 from tabulate import tabulate
@@ -7,7 +8,7 @@ from tabulate import tabulate
 from redis_batch.common import BaseRedisClass
 
 
-class Status:
+class Status(Enum):
     OK = 'OK'
     PENDING = 'WARNING - too many pending items'
     IDLE = 'WARNING - idle for long time'
@@ -29,11 +30,11 @@ class Monitor(BaseRedisClass):
         self.min_wait_time_ms = min_wait_time_ms
 
     def get_status(self, pending, idle):
-        status = Status.OK
+        status = Status.OK.value
         if pending > self.batch_size:
-            status = Status.PENDING
+            status = Status.PENDING.value
         elif idle > 30000:
-            status = Status.IDLE
+            status = Status.IDLE.value
         return status
 
     def move_from_consumer(self, pending, idle):
