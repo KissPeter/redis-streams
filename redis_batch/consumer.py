@@ -18,6 +18,7 @@ class RedisMsg:
     def __str__(self):
         return f'id: {self.msgid}, content: {self.content}'
 
+
 class MsgId(Enum):
     """
     '>' add new messages from group consumer group
@@ -35,12 +36,12 @@ class Consumer(BaseRedisClass):
         consumer_group: str = None,
         consumer_id: Union[str, int] = f"{os.getpid()}{threading.get_ident()}",
         batch_size=2,
-        wait_time_ms=0,
+        max_wait_time_ms=0,
         poll_time=100
     ):
         """
         poll_time_ms: poll time of one iteration
-        wait_time_ms: Approximate maximum time to wait for the batch to be complete.
+        max_wait_time_ms: Approximate maximum time to wait for the batch to be complete.
         Client returns if time pass even if the batch is not full. 0 means: no return
         """
         super().__init__(
@@ -49,50 +50,59 @@ class Consumer(BaseRedisClass):
         self.consumer_id = consumer_id
         self.batch_size = batch_size
         self.poll_time_ms = poll_time
-        self.wait_time_ms = wait_time_ms
+        self.wait_time_ms = max_wait_time_ms
 
-    def process_items(self, items):
-        iteration = 0
+    #
+    # def process_items(self, items):
+    #     iteration = 0
+    #
+    #     for item in items:
+    #         iteration += 1
+    #         msg_id = item[0].decode()
+    #         msg = item[1]
+    #         if iteration % 10 == 0:
+    #             print(f" Skip {msg_id}")
+    #         redis_item_name = (
+    #             f'{msg.get(b"type", b"").decode()}_{msg.get(b"data", b"").decode()}'
+    #         )
+    #         self.logger.info(f"{iteration}/{len(items)} Item id: {msg_id},  msg:{msg}")
+    #         self.redis_conn.incr(name=redis_item_name)
+    #         self.remove_item_from_stream(msg_id)
+    #
+    # def process_messages(self):
+    #     assigned_msgs = self.get_no_of_messages_already_assigned()
+    #     if assigned_msgs < self.batch_size:
+    #
+    #         self.get_new_messages_from_group(
+    #             requested_messages=max(1, self.batch_size - assigned_msgs)
+    #         )
+    #     else:
+    #         messages = self.get_messages_assigned_to_consumer()
+    #         items = messages[0][1]
+    #         self.process_items(items=items)
 
-        for item in items:
-            iteration += 1
-            msg_id = item[0].decode()
-            msg = item[1]
-            if iteration % 10 == 0:
-                print(f" Skip {msg_id}")
-            redis_item_name = (
-                f'{msg.get(b"type", b"").decode()}_{msg.get(b"data", b"").decode()}'
-            )
-            self.logger.info(f"{iteration}/{len(items)} Item id: {msg_id},  msg:{msg}")
-            self.redis_conn.incr(name=redis_item_name)
-            self.remove_item_from_stream(msg_id)
-
-    def process_messages(self):
-        assigned_msgs = self.get_no_of_messages_already_assigned()
-        if assigned_msgs < self.batch_size:
-
-            self.get_new_messages_from_group(
+    def get_items(self):
+        assigned_msgs = self._get_no_of_messages_already_assigned()
+        print(assigned_msgs)
+        while assigned_msgs < self.batch_size:
+            assigned_msgs += self._get_new_items_to_consumer(
                 requested_messages=max(1, self.batch_size - assigned_msgs)
             )
-        else:
-            messages = self.get_messages_assigned_to_consumer()
-            items = messages[0][1]
-            self.process_items(items=items)
-
-    def get_new_messages_from_group(self, requested_messages=None):
-        self.logger.debug(f"Requesting {requested_messages} messages from "
-                          f"{self.consumer_group}")
+            print(assigned_msgs)
         return self._get_messages_from_stream(
             latest_or_new=MsgId.never_delivered.value,
-            requested_messages=requested_messages,
+            requested_messages=self.batch_size,
             wait_time=self.poll_time_ms
         )
 
-    def get_messages_assigned_to_consumer(self):
-        return self._get_messages_from_stream(latest_or_new=MsgId.already_deliverd.value,
-                                              wait_time=0)
+    def _get_new_items_to_consumer(self, requested_messages):
+        items = self._get_messages_from_stream(
+            latest_or_new=MsgId.already_deliverd.value,
+            wait_time=0,
+            requested_messages=requested_messages)
+        return len(items)
 
-    def get_no_of_messages_already_assigned(self):
+    def _get_no_of_messages_already_assigned(self):
         _return = 0
         messages = self._get_messages_from_stream(
             latest_or_new=MsgId.already_deliverd.value, wait_time=0)
@@ -115,7 +125,7 @@ class Consumer(BaseRedisClass):
         consumername: name of the requesting consumer.
         self.streams: a dict of self.stream names to self.stream IDs, where
                IDs indicate the last ID already seen.
-        count: if set, only return this many items, beginning with the
+        count: if set, returns maximum this amount of messages, beginning with the
                earliest available.
         block: number of milliseconds to wait, if nothing already present.
         noack: do not add messages to the PEL
