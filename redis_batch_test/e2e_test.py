@@ -18,7 +18,8 @@ def test_end_to_end():
     redis_consumer = Consumer(redis_conn=redis_conn, stream=STREAM,
                               consumer_group=GROUP, batch_size=len(test_dataset))
     messages = redis_consumer.get_items()
-    assert redis_consumer._get_no_of_messages_already_assigned() == len(test_dataset)
+    print(f' msg: {len(messages)}')
+    print(f' dataset: {len(test_dataset)}')
     assert len(messages) != len(test_dataset)
     for message in messages:
         assert message.content in test_dataset

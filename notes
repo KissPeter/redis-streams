@@ -1,0 +1,6 @@
+add tstream * test1 value1
+add tstream * test2 value2
+xlen tstream
+xgroup create tstream tgroup 0
+xreadgroup group tgroup consumer1 count 2 streams tstream >
+xpending tstream tgroup - + 2 consumer1

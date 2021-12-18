@@ -18,6 +18,8 @@ class RedisMsg:
     def __str__(self):
         return f'id: {self.msgid}, content: {self.content}'
 
+    def __repr__(self):
+        return f'RedisMsg(msgid={self.msgid}, content={self.content})'
 
 class MsgId(Enum):
     """
@@ -86,35 +88,29 @@ class Consumer(BaseRedisClass):
         print(assigned_msgs)
         while assigned_msgs < self.batch_size:
             assigned_msgs += self._get_new_items_to_consumer(
-                requested_messages=max(1, self.batch_size - assigned_msgs)
+                requested_messages=max(1, self.batch_size - assigned_msgs),
             )
             print(assigned_msgs)
-        return self._get_messages_from_stream(
-            latest_or_new=MsgId.never_delivered.value,
-            requested_messages=self.batch_size,
-            wait_time=self.poll_time_ms
-        )
+        return self._get_pending_items_of_consumer()
 
     def _get_new_items_to_consumer(self, requested_messages):
         items = self._get_messages_from_stream(
-            latest_or_new=MsgId.already_deliverd.value,
-            wait_time=0,
+            latest_or_new=MsgId.never_delivered.value,
             requested_messages=requested_messages)
         return len(items)
 
     def _get_no_of_messages_already_assigned(self):
-        _return = 0
         messages = self._get_messages_from_stream(
-            latest_or_new=MsgId.already_deliverd.value, wait_time=0)
+            latest_or_new=MsgId.already_deliverd.value)
         _return = len(messages)
         self.logger.debug(f"Messages already assigned to this consumer: <= {_return}")
         return _return
 
     def _get_messages_from_stream(
-        self, latest_or_new: MsgId = MsgId.already_deliverd.value,
+        self, latest_or_new: MsgId = MsgId.never_delivered.value,
         requested_messages=None,
         wait_time=None
-    ) -> List[RedisMsg]:
+    ) -> List[object]:
         """
         The command to read data from a group is XREADGROUP.
         In our example, when App A starts processing data,
@@ -143,8 +139,39 @@ class Consumer(BaseRedisClass):
                 block=wait_time if wait_time else self.poll_time_ms,
                 noack=False,
             )
+            return items
+        except ResponseError:
+            self.logger.warning(
+                f"Failed to get messages from {self.stream} from "
+                f"{self.consumer_group} as {self.consumer_id}",
+                exc_info=True,
+            )
+
+    def _get_pending_items_of_consumer(self) -> List[RedisMsg]:
+        """
+            name: name of the stream.
+            groupname: name of the consumer group.
+            idle: available from  version 6.2. filter entries by their
+            idle-time, given in milliseconds (optional).
+            min: minimum stream ID.
+            max: maximum stream ID.
+            count: number of messages to return
+            consumername: name of a consumer to filter by (optional).
+        """
+        try:
+            msgs = []
+            items = self.redis_conn.xpending_range(
+                name=self.stream,
+                groupname=self.consumer_group,
+                consumername=self.consumer_id,
+                count=self.batch_size,
+                min='-',
+                max='+',
+            )
             for item in items:
-                msgs.append(RedisMsg(msgid=item[0].decode(), content=item[1]))
+                print(f'1>>>>{item}')
+                msgs.append(RedisMsg(msgid=item.get('message_id').decode(), content=item.get('content')))
+            print(f'>>>>{len(msgs)}')
             return msgs
         except ResponseError:
             self.logger.warning(
