@@ -1,1 +1,1 @@
-PACKAGE = "redis_conn-batch"
+PACKAGE = "redis-batch"
