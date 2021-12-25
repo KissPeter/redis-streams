@@ -1,0 +1,9 @@
+flake8
+flake8-bugbear
+flake8-bandit
+flake8-black
+flake8-pylint
+pytest
+pytest
+pytest-cov
+pytest-random-order

@@ -1,8 +1,9 @@
 import os
 import threading
+from datetime import timedelta, datetime
 from enum import Enum
 from typing import Union, List
-from datetime import timedelta, datetime
+
 from redis import Redis
 from redis.exceptions import ResponseError
 
@@ -10,16 +11,15 @@ from redis_batch.common import BaseRedisClass
 
 
 class RedisMsg:
-
     def __init__(self, msgid, content):
         self.msgid = msgid
         self.content = content
 
     def __str__(self):
-        return f'id: {self.msgid}, content: {self.content}'
+        return f"id: {self.msgid}, content: {self.content}"
 
     def __repr__(self):
-        return f'RedisMsg(msgid={self.msgid}, content={self.content})'
+        return f"RedisMsg(msgid={self.msgid}, content={self.content})"
 
 
 class MsgId(Enum):
@@ -27,8 +27,9 @@ class MsgId(Enum):
     '>' add new messages from group consumer group
     '0' get messages already added to consumer group
     """
-    never_delivered = '>'
-    already_deliverd = '0'
+
+    never_delivered = ">"
+    already_deliverd = "0"
 
 
 class Consumer(BaseRedisClass):
@@ -40,7 +41,7 @@ class Consumer(BaseRedisClass):
         consumer_id: Union[str, int] = f"{os.getpid()}{threading.get_ident()}",
         batch_size=2,
         max_wait_time_ms=10000,
-        poll_time=100
+        poll_time=100,
     ):
         """
         poll_time_ms: poll time of one iteration
@@ -55,39 +56,10 @@ class Consumer(BaseRedisClass):
         self.poll_time_ms = poll_time
         self.max_wait_time_ms = max_wait_time_ms
 
-    #
-    # def process_items(self, items):
-    #     iteration = 0
-    #
-    #     for item in items:
-    #         iteration += 1
-    #         msg_id = item[0].decode()
-    #         msg = item[1]
-    #         if iteration % 10 == 0:
-    #             print(f" Skip {msg_id}")
-    #         redis_item_name = (
-    #             f'{msg.get(b"type", b"").decode()}_{msg.get(b"data", b"").decode()}'
-    #         )
-    #         self.logger.info(f"{iteration}/{len(items)} Item id: {msg_id},  msg:{msg}")
-    #         self.redis_conn.incr(name=redis_item_name)
-    #         self.remove_item_from_stream(msg_id)
-    #
-    # def process_messages(self):
-    #     self.assigned_messages = self.get_no_of_messages_already_assigned()
-    #     if self.assigned_messages < self.batch_size:
-    #
-    #         self.get_new_messages_from_group(
-    #             requested_messages=max(1, self.batch_size - self.assigned_messages)
-    #         )
-    #     else:
-    #         messages = self.get_messages_assigned_to_consumer()
-    #         items = messages[0][1]
-    #         self.process_items(items=items)
-
     def _wait_for_more_messages(self):
         date_constraint = datetime.utcnow() <= self.hard_stop_time
         message_number_constraint = self.assigned_messages < self.batch_size
-        self.logger.debug(f'{date_constraint}, {message_number_constraint}')
+        self.logger.debug(f"{date_constraint}, {message_number_constraint}")
         return all([date_constraint, message_number_constraint])
 
     def _get_hard_stop_time(self):
@@ -101,12 +73,14 @@ class Consumer(BaseRedisClass):
                 requested_messages=max(1, self.batch_size - self.assigned_messages),
             )
         return self._get_messages_from_stream(
-            latest_or_new=MsgId.already_deliverd.value)
+            latest_or_new=MsgId.already_deliverd.value
+        )
 
     def _get_new_items_to_consumer(self, requested_messages):
         items = self._get_messages_from_stream(
             latest_or_new=MsgId.never_delivered.value,
-            requested_messages=requested_messages)
+            requested_messages=requested_messages,
+        )
         return len(items)
 
     def _get_no_of_messages_already_assigned(self):
@@ -116,9 +90,10 @@ class Consumer(BaseRedisClass):
         return _return
 
     def _get_messages_from_stream(
-        self, latest_or_new: MsgId = MsgId.never_delivered.value,
+        self,
+        latest_or_new: MsgId = MsgId.never_delivered.value,
         requested_messages=None,
-        wait_time=None
+        wait_time=None,
     ) -> List[object]:
         """
         The command to read data from a group is XREADGROUP.
@@ -139,7 +114,6 @@ class Consumer(BaseRedisClass):
         if requested_messages is None:
             requested_messages = self.batch_size
         try:
-            msgs = []
             items = self.redis_conn.xreadgroup(
                 groupname=self.consumer_group,
                 consumername=self.consumer_id,
@@ -158,24 +132,23 @@ class Consumer(BaseRedisClass):
 
     def _get_pending_items_of_consumer(self) -> List[RedisMsg]:
         """
-            name: name of the stream.
-            groupname: name of the consumer group.
-            idle: available from  version 6.2. filter entries by their
-            idle-time, given in milliseconds (optional).
-            min: minimum stream ID.
-            max: maximum stream ID.
-            count: number of messages to return
-            consumername: name of a consumer to filter by (optional).
+        name: name of the stream.
+        groupname: name of the consumer group.
+        idle: available from  version 6.2. filter entries by their
+        idle-time, given in milliseconds (optional).
+        min: minimum stream ID.
+        max: maximum stream ID.
+        count: number of messages to return
+        consumername: name of a consumer to filter by (optional).
         """
         try:
-            msgs = []
             items = self.redis_conn.xpending_range(
                 name=self.stream,
                 groupname=self.consumer_group,
                 consumername=self.consumer_id,
                 count=self.batch_size,
-                min='-',
-                max='+',
+                min="-",
+                max="+",
             )
             return items
         except ResponseError:
@@ -188,24 +161,11 @@ class Consumer(BaseRedisClass):
     def _transform_redis_resp_to_objects(self, items):
         msgs = []
         if isinstance(items, list):
-            if items[0][0] == self.stream.encode():
+            if items[0][0] == self.stream:
                 items = items[0][1]
         for item in items:
-            msgs.append(RedisMsg(msgid=item[0].decode(),
-                                 content=self._decode_values(item[1])))
+            msgs.append(RedisMsg(msgid=item[0], content=item[1]))
         return msgs
-
-    def _decode_values(self, val):
-        if isinstance(val, dict):
-            _ret = {}
-            for k,v in val.items():
-                if isinstance(k, bytes) and isinstance(v, bytes):
-                    _ret[k.decode()] = v.decode()
-                else:
-                    _ret[k] = v
-        else:
-            _ret = val
-        return _ret
 
     def remove_item_from_stream(self, item_id):
         """

@@ -1,0 +1,12 @@
+[run]
+concurrency=multiprocessing
+branch = True
+
+[report]
+omit =
+    /usr/*
+    */.local/*
+
+[paths]
+source=
+    redis_batch/

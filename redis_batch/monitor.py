@@ -9,19 +9,19 @@ from redis_batch.common import BaseRedisClass
 
 
 class Status(Enum):
-    OK = 'OK'
-    PENDING = 'WARNING - too many pending items'
-    IDLE = 'WARNING - idle for long time'
+    OK = "OK"
+    PENDING = "WARNING - too many pending items"
+    IDLE = "WARNING - idle for long time"
 
 
 class Monitor(BaseRedisClass):
     def __init__(
-            self,
-            redis_conn: Redis = None,
-            stream: str = None,
-            consumer_group: str = None,
-            batch_size=2,
-            min_wait_time_ms=10,
+        self,
+        redis_conn: Redis = None,
+        stream: str = None,
+        consumer_group: str = None,
+        batch_size=2,
+        min_wait_time_ms=10,
     ):
         super().__init__(
             redis_conn=redis_conn, stream=stream, consumer_group=consumer_group
@@ -44,7 +44,7 @@ class Monitor(BaseRedisClass):
         return idle > self.min_wait_time_ms and pending > self.batch_size
 
     def cleanup_old_consumer(
-            self, group, pending_count, consumer_to_delete, consumer_to_assign
+        self, group, pending_count, consumer_to_delete, consumer_to_assign
     ):
         """
         1. query the pending items of consumer
@@ -55,7 +55,7 @@ class Monitor(BaseRedisClass):
         """
         messages_to_cleanup = []
         for message in self.get_pending_items_of_consumer(
-                group=group, count=pending_count, consumer_to_delete=consumer_to_delete
+            group=group, count=pending_count, consumer_to_delete=consumer_to_delete
         ):
             messages_to_cleanup.append(message.get("message_id"))
         if len(messages_to_cleanup):
@@ -109,7 +109,7 @@ class Monitor(BaseRedisClass):
             group_name = group.get("name")
             if group.get("consumers") > 0:
                 for consumer in self.redis_conn.xinfo_consumers(
-                        name=self.stream, groupname=group_name
+                    name=self.stream, groupname=group_name
                 ):
                     consumer_id = consumer.get("name")
                     pending_items = consumer.get("pending", 0)
