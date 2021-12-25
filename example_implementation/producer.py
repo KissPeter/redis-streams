@@ -35,7 +35,7 @@ class Producer(BaseRedisClass):
     def feed_redis(self):
         iteration = 1
         while True:
-            sample_data = {"data": iteration, "type": self.consumer_group}
+            sample_data = {"iteration": iteration, "type": self.consumer_group}
             print(f" {iteration}. Adding message to steam: {sample_data}")
             self._add_message_to_stream(sample_data)
             time.sleep(get_random_wait_time())

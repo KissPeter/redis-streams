@@ -1,8 +1,8 @@
 import os
 import threading
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Union, List
+from typing import List, Union
 
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -160,9 +160,12 @@ class Consumer(BaseRedisClass):
 
     def _transform_redis_resp_to_objects(self, items):
         msgs = []
-        if isinstance(items, list):
-            if items[0][0] == self.stream:
-                items = items[0][1]
+        if isinstance(items, list) and len(items):
+            try:
+                if items[0][0] == self.stream:
+                    items = items[0][1]
+            except IndexError:
+                self.logger.warning(items, exc_info=True)
         for item in items:
             msgs.append(RedisMsg(msgid=item[0], content=item[1]))
         return msgs
