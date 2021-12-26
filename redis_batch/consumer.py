@@ -39,9 +39,9 @@ class Consumer(BaseRedisClass):
         stream: str = None,
         consumer_group: str = None,
         consumer_id: Union[str, int] = f"{os.getpid()}{threading.get_ident()}",
-        batch_size=2,
-        max_wait_time_ms=10000,
-        poll_time=100,
+        batch_size: int = 2,
+        max_wait_time_ms: int = 10000,
+        poll_time_ms: int = 100,
     ):
         """
         poll_time_ms: poll time of one iteration
@@ -51,23 +51,28 @@ class Consumer(BaseRedisClass):
         super().__init__(
             redis_conn=redis_conn, stream=stream, consumer_group=consumer_group
         )
+        self.assigned_messages = 0
         self.consumer_id = consumer_id
         self.batch_size = batch_size
-        self.poll_time_ms = poll_time
+        self.poll_time_ms = poll_time_ms
         self.max_wait_time_ms = max_wait_time_ms
+        self.hard_stop_time = self._get_hard_stop_time()
 
     def _wait_for_more_messages(self):
-        date_constraint = datetime.utcnow() <= self.hard_stop_time
+        _now = datetime.utcnow()
+        date_constraint = _now <= self.hard_stop_time
         message_number_constraint = self.assigned_messages < self.batch_size
-        self.logger.debug(f"{date_constraint}, {message_number_constraint}")
+        self.logger.debug(f"Is time to wait for additional messages: {date_constraint} "
+                          f"({_now} / {self.hard_stop_time}) "
+                          f"Is batch ready: {not message_number_constraint} "
+                          f"({self.assigned_messages} / {self.batch_size})")
         return all([date_constraint, message_number_constraint])
 
     def _get_hard_stop_time(self):
-        return datetime.utcnow() + timedelta(microseconds=self.max_wait_time_ms)
+        return datetime.utcnow() + timedelta(microseconds=self.max_wait_time_ms * 1000)
 
     def get_items(self):
         self.assigned_messages = self._get_no_of_messages_already_assigned()
-        self.hard_stop_time = self._get_hard_stop_time()
         while self._wait_for_more_messages():
             self.assigned_messages += self._get_new_items_to_consumer(
                 requested_messages=max(1, self.batch_size - self.assigned_messages),
@@ -81,6 +86,7 @@ class Consumer(BaseRedisClass):
             latest_or_new=MsgId.never_delivered.value,
             requested_messages=requested_messages,
         )
+        self.logger.debug(f'Received {len(items)} new items from stream')
         return len(items)
 
     def _get_no_of_messages_already_assigned(self):
@@ -122,6 +128,7 @@ class Consumer(BaseRedisClass):
                 block=wait_time if wait_time else self.poll_time_ms,
                 noack=False,
             )
+            self.logger.debug(f'Got {items}')
             return self._transform_redis_resp_to_objects(items)
         except ResponseError:
             self.logger.warning(
@@ -130,7 +137,7 @@ class Consumer(BaseRedisClass):
                 exc_info=True,
             )
 
-    def _get_pending_items_of_consumer(self) -> List[RedisMsg]:
+    def _get_pending_items_of_consumer(self) -> List[object]:
         """
         name: name of the stream.
         groupname: name of the consumer group.
@@ -150,6 +157,7 @@ class Consumer(BaseRedisClass):
                 min="-",
                 max="+",
             )
+            self.logger.debug(f'Pending items of {self.consumer_id}: {len(items)}')
             return items
         except ResponseError:
             self.logger.warning(
@@ -180,6 +188,20 @@ class Consumer(BaseRedisClass):
         name: name of the self.stream.
         groupname: name of the consumer group.
         *ids: message ids to acknowlege.
-
         """
         self.redis_conn.xack(self.stream, self.consumer_group, item_id)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(" \
+               f"redis_conn={self.redis_conn}," \
+               f"stream={self.stream}," \
+               f"consumer_group={self.consumer_group}," \
+               f"consumer_id={self.consumer_id}," \
+               f"batch_size={self.batch_size}," \
+               f"max_wait_time_ms={self.max_wait_time_ms}," \
+               f"poll_time_ms={self.poll_time_ms})"
+
+    def __del__(self):
+        self.redis_conn.xgroup_delconsumer(name=self.stream,
+                                           groupname=self.consumer_group,
+                                           consumername=self.consumer_id)
