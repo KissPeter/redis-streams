@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 
 import pytest
 from redis import Redis
@@ -9,6 +10,11 @@ from redis_batch.consumer import Consumer
 
 STREAM = "test_stream"
 GROUP = "test_group"
+
+
+def get_test_name():
+    _, _, test_name = os.getenv("PYTEST_CURRENT_TEST").split("::", 2)
+    return test_name
 
 
 def set_logger(level=logging.DEBUG):
@@ -58,6 +64,7 @@ class TestE2E:
             consumer_group=GROUP,
             poll_time_ms=500,
             batch_size=len(TEST_DATASET),
+            consumer_id=get_test_name()
         )
         messages = redis_consumer.get_items()
         assert len(messages) == len(TEST_DATASET)
@@ -75,6 +82,7 @@ class TestE2E:
             max_wait_time_ms=max_wait_time,
             poll_time_ms=int(max_wait_time / 10),
             batch_size=len(TEST_DATASET) + 1,
+            consumer_id=get_test_name()
         )
         t1 = datetime.datetime.now()
         messages = redis_consumer.get_items()
