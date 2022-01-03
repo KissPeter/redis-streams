@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -27,11 +28,40 @@ class BaseRedisClass:
             self.redis_conn.xgroup_create(
                 name=self.stream, groupname=self.consumer_group, id="0", mkstream=True
             )
-            self.logger.debug(
-                f" {self.consumer_group} consumer group has been created "
-            )
+            self.logger.debug(f"{self.consumer_group} consumer group has been created")
         except ResponseError:
             self.logger.debug(f" {self.consumer_group} consumer group already exists")
 
     def prepare_redis(self) -> None:
         self._create_consumer_group()
+
+    def get_pending_items_of_consumer(self, item_count: int, consumer_id: str) -> List[
+        dict]:
+        """
+        name: name of the stream.
+        groupname: name of the consumer group.
+        idle: available from  version 6.2. filter entries by their
+        idle-time, given in milliseconds (optional).
+        min: minimum stream ID.
+        max: maximum stream ID.
+        item_count: number of messages to return
+        consumername: name of a consumer to filter by (optional).
+        """
+        return self.redis_conn.xpending_range(
+            name=self.stream,
+            groupname=self.consumer_group,
+            min="-",
+            max="+",
+            count=item_count,
+            consumername=consumer_id,
+        )
+
+    def remove_consumer(self, consumer_to_delete: str) -> int:
+        """
+        Removes the consumer from the consumer group,  returns the number of lost
+        messages as int
+        """
+        return self.redis_conn.xgroup_delconsumer(
+            name=self.stream, groupname=self.consumer_group,
+            consumername=consumer_to_delete
+        )

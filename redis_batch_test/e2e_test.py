@@ -74,7 +74,7 @@ class TestE2E:
             redis_consumer.remove_item_from_stream(item_id=message.msgid)
 
     def test_end_to_end_return_before_full_batch(self):
-        max_wait_time = 500
+        max_wait_time = 50
         redis_consumer = Consumer(
             redis_conn=redis_conn,
             stream=STREAM,

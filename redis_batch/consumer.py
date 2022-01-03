@@ -90,7 +90,8 @@ class Consumer(BaseRedisClass):
         return len(items)
 
     def _get_no_of_messages_already_assigned(self):
-        messages = self._get_pending_items_of_consumer()
+        messages = self.get_pending_items_of_consumer(item_count=self.batch_size,
+                                                      consumer_id=self.consumer_id)
         _return = len(messages)
         self.logger.debug(f"Messages already assigned to this consumer: <= {_return}")
         return _return
@@ -111,7 +112,7 @@ class Consumer(BaseRedisClass):
         consumername: name of the requesting consumer.
         self.streams: a dict of self.stream names to self.stream IDs, where
                IDs indicate the last ID already seen.
-        count: if set, returns maximum this amount of messages, beginning with the
+        item_count: if set, returns maximum this amount of messages, beginning with the
                earliest available.
         block: number of milliseconds to wait, if nothing already present.
         noack: do not add messages to the PEL
@@ -130,35 +131,6 @@ class Consumer(BaseRedisClass):
             )
             self.logger.debug(f'Got {items}')
             return self._transform_redis_resp_to_objects(items)
-        except ResponseError:
-            self.logger.warning(
-                f"Failed to get messages from {self.stream} from "
-                f"{self.consumer_group} as {self.consumer_id}",
-                exc_info=True,
-            )
-
-    def _get_pending_items_of_consumer(self) -> List[object]:
-        """
-        name: name of the stream.
-        groupname: name of the consumer group.
-        idle: available from  version 6.2. filter entries by their
-        idle-time, given in milliseconds (optional).
-        min: minimum stream ID.
-        max: maximum stream ID.
-        count: number of messages to return
-        consumername: name of a consumer to filter by (optional).
-        """
-        try:
-            items = self.redis_conn.xpending_range(
-                name=self.stream,
-                groupname=self.consumer_group,
-                consumername=self.consumer_id,
-                count=self.batch_size,
-                min="-",
-                max="+",
-            )
-            self.logger.debug(f'Pending items of {self.consumer_id}: {len(items)}')
-            return items
         except ResponseError:
             self.logger.warning(
                 f"Failed to get messages from {self.stream} from "
@@ -202,6 +174,4 @@ class Consumer(BaseRedisClass):
                f"poll_time_ms={self.poll_time_ms})"
 
     def __del__(self):
-        self.redis_conn.xgroup_delconsumer(name=self.stream,
-                                           groupname=self.consumer_group,
-                                           consumername=self.consumer_id)
+        self.remove_consumer(self.consumer_id)
