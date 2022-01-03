@@ -62,10 +62,12 @@ class Consumer(BaseRedisClass):
         _now = datetime.utcnow()
         date_constraint = _now <= self.hard_stop_time
         message_number_constraint = self.assigned_messages < self.batch_size
-        self.logger.debug(f"Is time to wait for additional messages: {date_constraint} "
-                          f"({_now} / {self.hard_stop_time}) "
-                          f"Is batch ready: {not message_number_constraint} "
-                          f"({self.assigned_messages} / {self.batch_size})")
+        self.logger.debug(
+            f"Is time to wait for additional messages: {date_constraint} "
+            f"({_now} / {self.hard_stop_time}) "
+            f"Is batch ready: {not message_number_constraint} "
+            f"({self.assigned_messages} / {self.batch_size})"
+        )
         return all([date_constraint, message_number_constraint])
 
     def _get_hard_stop_time(self):
@@ -86,12 +88,13 @@ class Consumer(BaseRedisClass):
             latest_or_new=MsgId.never_delivered.value,
             requested_messages=requested_messages,
         )
-        self.logger.debug(f'Received {len(items)} new items from stream')
+        self.logger.debug(f"Received {len(items)} new items from stream")
         return len(items)
 
     def _get_no_of_messages_already_assigned(self):
-        messages = self.get_pending_items_of_consumer(item_count=self.batch_size,
-                                                      consumer_id=self.consumer_id)
+        messages = self.get_pending_items_of_consumer(
+            item_count=self.batch_size, consumer_id=self.consumer_id
+        )
         _return = len(messages)
         self.logger.debug(f"Messages already assigned to this consumer: <= {_return}")
         return _return
@@ -129,7 +132,7 @@ class Consumer(BaseRedisClass):
                 block=wait_time if wait_time else self.poll_time_ms,
                 noack=False,
             )
-            self.logger.debug(f'Got {items}')
+            self.logger.debug(f"Got {items}")
             return self._transform_redis_resp_to_objects(items)
         except ResponseError:
             self.logger.warning(
@@ -164,14 +167,16 @@ class Consumer(BaseRedisClass):
         self.redis_conn.xack(self.stream, self.consumer_group, item_id)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(" \
-               f"redis_conn={self.redis_conn}," \
-               f"stream={self.stream}," \
-               f"consumer_group={self.consumer_group}," \
-               f"consumer_id={self.consumer_id}," \
-               f"batch_size={self.batch_size}," \
-               f"max_wait_time_ms={self.max_wait_time_ms}," \
-               f"poll_time_ms={self.poll_time_ms})"
+        return (
+            f"{self.__class__.__name__}("
+            f"redis_conn={self.redis_conn},"
+            f"stream={self.stream},"
+            f"consumer_group={self.consumer_group},"
+            f"consumer_id={self.consumer_id},"
+            f"batch_size={self.batch_size},"
+            f"max_wait_time_ms={self.max_wait_time_ms},"
+            f"poll_time_ms={self.poll_time_ms})"
+        )
 
     def __del__(self):
         self.remove_consumer(self.consumer_id)

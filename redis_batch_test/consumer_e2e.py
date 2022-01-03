@@ -1,40 +1,14 @@
 import datetime
-import logging
-import os
 
 import pytest
 from redis import Redis
 
-from redis_batch import PACKAGE
 from redis_batch.consumer import Consumer
+from redis_batch_test.test_utils import redis_conn, STREAM, GROUP, \
+    get_test_name, set_logger, TEST_DATASET
 
-STREAM = "test_stream"
-GROUP = "test_group"
-
-
-def get_test_name():
-    _, _, test_name = os.getenv("PYTEST_CURRENT_TEST").split("::", 2)
-    return test_name
-
-
-def set_logger(level=logging.DEBUG):
-    if level == logging.DEBUG:
-        formatter = logging.Formatter(
-            "{%(filename)s:%(lineno)d} [%(levelname)s]  %(name)s: %(message)s"
-        )
-    else:
-        formatter = logging.Formatter("[%(levelname)s]  %(name)s: %(message)s")
-    logger = logging.getLogger(PACKAGE)
-    logger.setLevel(level)
-    stream = logging.StreamHandler()
-    stream.setFormatter(formatter)
-    logger.addHandler(stream)
-    return logger
-
-
-logger = set_logger()
 redis_conn = Redis(decode_responses=True)
-TEST_DATASET = [{"test": "data1"}, {"test": "data2"}]
+logger = set_logger()
 
 
 @pytest.fixture(autouse=True)
@@ -55,7 +29,7 @@ def prepare_redis():
                                       consumername=consumer.get("name"))
 
 
-class TestE2E:
+class TestConsumerE2E:
 
     def test_end_to_end_full_batch(self):
         redis_consumer = Consumer(

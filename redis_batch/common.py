@@ -35,8 +35,9 @@ class BaseRedisClass:
     def prepare_redis(self) -> None:
         self._create_consumer_group()
 
-    def get_pending_items_of_consumer(self, item_count: int, consumer_id: str) -> List[
-        dict]:
+    def get_pending_items_of_consumer(
+        self, item_count: int, consumer_id: str
+    ) -> List[dict]:
         """
         name: name of the stream.
         groupname: name of the consumer group.
@@ -62,6 +63,7 @@ class BaseRedisClass:
         messages as int
         """
         return self.redis_conn.xgroup_delconsumer(
-            name=self.stream, groupname=self.consumer_group,
-            consumername=consumer_to_delete
+            name=self.stream,
+            groupname=self.consumer_group,
+            consumername=consumer_to_delete,
         )

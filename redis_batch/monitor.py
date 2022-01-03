@@ -21,7 +21,7 @@ class Monitor(BaseRedisClass):
         consumer_group: str = None,
         batch_size: int = 2,
         min_wait_time_ms: int = 10,
-        idle_time_ms_warning_threshold: int = 30000
+        idle_time_ms_warning_threshold: int = 30000,
     ):
         super().__init__(
             redis_conn=redis_conn, stream=stream, consumer_group=consumer_group
@@ -58,21 +58,24 @@ class Monitor(BaseRedisClass):
         # 1
         messages_to_cleanup = []
         for message in self.get_pending_items_of_consumer(
-            item_count=pending_count,
-            consumer_id=consumer_to_delete
+            item_count=pending_count, consumer_id=consumer_to_delete
         ):
             messages_to_cleanup.append(message.get("message_id"))
         if len(messages_to_cleanup):
-            self.logger.debug(f"Moving {len(messages_to_cleanup)} items from "
-                              f"{consumer_to_delete} to {consumer_to_assign}")
+            self.logger.debug(
+                f"Moving {len(messages_to_cleanup)} items from "
+                f"{consumer_to_delete} to {consumer_to_assign}"
+            )
             # 2
             self.assign_items_to_active_consumer(
                 items=messages_to_cleanup,
                 consumer_to_assign=consumer_to_assign,
                 group=self.consumer_group,
             )
-            self.logger.debug(f"Moved {len(messages_to_cleanup)} items from "
-                              f"{consumer_to_delete} to {consumer_to_assign}")
+            self.logger.debug(
+                f"Moved {len(messages_to_cleanup)} items from "
+                f"{consumer_to_delete} to {consumer_to_assign}"
+            )
         # 3
         resp = self.remove_consumer(consumer_to_delete=consumer_to_delete)
         if resp > 0:
@@ -103,8 +106,9 @@ class Monitor(BaseRedisClass):
                     consumer_id = consumer.get("name")
                     pending_items = consumer.get("pending", 0)
                     idle = consumer.get("idle")
-                    status = self._get_status_by_metrics(pending=pending_items,
-                                                         idle=idle)
+                    status = self._get_status_by_metrics(
+                        pending=pending_items, idle=idle
+                    )
                     if self._move_from_consumer(pending=pending_items, idle=idle):
                         consumers_to_cleanup[group_name][consumer_id] = pending_items
                     else:
@@ -132,7 +136,7 @@ class Monitor(BaseRedisClass):
                         consumer_to_assign=consumer_to_assign,
                     )
         else:
-            self.logger.debug(f"No cleanup")
+            self.logger.debug("No cleanup")
 
     def _generate_table(self):
         return tabulate(
@@ -147,7 +151,7 @@ class Monitor(BaseRedisClass):
         )
 
     def print_monitoring_data(self, stream):
-        if hasattr(stream, 'write'):
+        if hasattr(stream, "write"):
             stream.write(self._generate_table())
         else:
             print(self._generate_table())
