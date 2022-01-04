@@ -1,39 +1,20 @@
-import pytest
-from redis import Redis
-
 from redis_batch.common import BaseRedisClass
 from redis_batch.consumer import Consumer
-from redis_batch_test.test_utils import redis_conn, STREAM, GROUP, \
-    get_test_name, set_logger, TEST_DATASET
-
-redis_conn = Redis(decode_responses=True)
-logger = set_logger()
+from redis_batch_test.base import TestBase
+from redis_batch_test.test_utils import STREAM, GROUP, \
+    get_test_name
 
 
-@pytest.fixture(autouse=True)
-def prepare_redis():
-    if redis_conn.xlen(name=STREAM):
-        logger.info(f'Trim {STREAM}')
-        redis_conn.xtrim(STREAM, maxlen=0)
-    for test_data in TEST_DATASET:
-        logger.debug(f"Add  test data: {test_data}")
-        redis_conn.xadd(name=STREAM, fields=test_data)
-    assert redis_conn.xlen(name=STREAM) == len(TEST_DATASET)
-    yield
-    redis_conn.xtrim(STREAM, maxlen=0)
-    for consumer in redis_conn.xinfo_consumers(name=STREAM, groupname=GROUP):
-        logger.debug(f'Delete consumer {consumer}')
-        redis_conn.xgroup_delconsumer(name=STREAM,
-                                      groupname=GROUP,
-                                      consumername=consumer.get("name"))
+class TestCommon(TestBase):
 
-
-class TestCommon:
-    base = BaseRedisClass(redis_conn=redis_conn, stream=STREAM, consumer_group=GROUP)
+    @classmethod
+    def setup_class(cls):
+        cls.base = BaseRedisClass(redis_conn=cls.redis_conn, stream=STREAM,
+                                  consumer_group=GROUP)
 
     def test_get_pending_items_of_consumer(self):
         redis_consumer = Consumer(
-            redis_conn=redis_conn,
+            redis_conn=self.redis_conn,
             stream=STREAM,
             consumer_group=GROUP,
             poll_time_ms=50,
@@ -47,7 +28,7 @@ class TestCommon:
 
     def test_remove_consumer(self):
         redis_consumer = Consumer(
-            redis_conn=redis_conn,
+            redis_conn=self.redis_conn,
             stream=STREAM,
             consumer_group=GROUP,
             poll_time_ms=50,
