@@ -43,9 +43,14 @@ jobs:
             -   run: redis-cli ping
             -   name: Test
                 run: |
-                    pytest  -x --cov-report term --cov=redis_batch  --durations=10 --show-capture=stdout -vv -rP --random-order redis_batch_test
+                    pytest  -x --cov-report term --cov=redis_batch  --durations=10 --show-capture=stdout -vv -rP --random-order --html=pytest_report.html --self-contained-html redis_batch_test
                     coverage html
             -   uses: actions/upload-artifact@v2
                 with:
                     name: Coverage-${{ matrix.python-version }}
                     path: ./htmlcov
+            -   uses: actions/upload-artifact@v2
+                with:
+                    name: Pytest-Report-${{ matrix.python-version }}
+                    path: pytest_report.html
+

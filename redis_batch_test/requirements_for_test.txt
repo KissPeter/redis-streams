@@ -11,5 +11,6 @@ mypy
 pytest
 pytest
 pytest-cov
+pytest-html
 pytest-random-order
 
