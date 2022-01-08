@@ -29,7 +29,7 @@ jobs:
         if [ -f redis_batch_test/requirements_for_test.txt ]; then pip install -r redis_batch_test/requirements_for_test.txt; fi
     - name: Lint with flake8
       run: |
-        flake8 redis_batchs
+        flake8 redis_batch
     - uses: actions/checkout@v2
     - uses: shogo82148/actions-setup-redis@v1
       with:
