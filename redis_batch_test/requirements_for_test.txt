@@ -5,6 +5,7 @@ flake8-black
 flake8-pylint
 flake8-isort
 vulture
+pylint-json2html
 
 pytest
 pytest
