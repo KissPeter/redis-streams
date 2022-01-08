@@ -12,4 +12,4 @@ pytest
 pytest
 pytest-cov
 pytest-random-order
-coverage-lcov
+
