@@ -90,7 +90,7 @@ class Monitor(BaseRedisClass):
             min_idle_time=self.min_wait_time_ms,
         )
 
-    def monitor(self):
+    def collect_monitoring_data(self, auto_cleanup=True):
 
         self.collected_consumers_data = []
         consumers_to_cleanup = defaultdict(lambda: {})
@@ -126,7 +126,7 @@ class Monitor(BaseRedisClass):
                             status,
                         ]
                     )
-        if consumer_to_assign and len(consumers_to_cleanup):
+        if consumer_to_assign and len(consumers_to_cleanup) and auto_cleanup:
             self.logger.debug("Cleaning up unhealthy consumers")
             for group in consumers_to_cleanup.keys():
                 for consumer_id, pending_items in consumers_to_cleanup[group].items():
@@ -150,8 +150,8 @@ class Monitor(BaseRedisClass):
             ],
         )
 
-    def print_monitoring_data(self, stream):
-        if hasattr(stream, "write"):
-            stream.write(self._generate_table())
+    def print_monitoring_data(self, output_stream):
+        if hasattr(output_stream, "write"):
+            output_stream.write(self._generate_table())
         else:
             print(self._generate_table())

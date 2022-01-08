@@ -8,9 +8,9 @@ GROUP = "test_group"
 TEST_DATASET = [{"test": "data1"}, {"test": "data2"}]
 
 
-def get_test_name():
+def get_test_name(suffix=None):
     _, _, test_name = os.getenv("PYTEST_CURRENT_TEST").split("::", 2)
-    return test_name
+    return f"{test_name}{suffix}"
 
 
 def set_logger(level=logging.DEBUG):
