@@ -24,7 +24,7 @@ load-plugins=pylint_json2html
 
 # Use multiple processes to speed up Pylint.
 # modified from 1 to 4
-jobs=2
+jobs=1
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
