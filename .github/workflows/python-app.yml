@@ -44,7 +44,7 @@ jobs:
             -   name: Test
                 run: |
                     pytest  -x --cov-report term --cov=redis_batch  --durations=10 --show-capture=stdout -vv -rP --random-order redis_batch_test
-                    coverage-lcov --output_file_path lcov.info
+                    coverage-lcov --output_file_path ./lcov.info
             -   uses: romeovs/lcov-reporter-action@v0.2.16
                 with:
-                    lcov-file: .lcov.info
+                    lcov-file: ./lcov.info
