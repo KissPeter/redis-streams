@@ -17,6 +17,7 @@ class TestConsumerE2E(TestBase):
             batch_size=len(TEST_DATASET),
             consumer_id=get_test_name()
         )
+        repr(redis_consumer)
         messages = redis_consumer.get_items()
         assert len(messages) == len(TEST_DATASET)
         for message in messages:

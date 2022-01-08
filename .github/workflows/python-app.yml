@@ -47,5 +47,5 @@ jobs:
                     coverage html
             -   uses: actions/upload-artifact@v2
                 with:
-                    name: Coverage
+                    name: Coverage-${{ matrix.python-version }}
                     path: ./htmlcov
