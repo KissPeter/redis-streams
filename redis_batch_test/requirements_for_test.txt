@@ -6,6 +6,7 @@ flake8-pylint
 flake8-isort
 vulture
 pylint-json2html
+mypy
 
 pytest
 pytest
