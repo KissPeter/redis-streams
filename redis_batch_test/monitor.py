@@ -2,16 +2,17 @@ from redis_batch.monitor import Monitor
 from redis_batch_test.base import TestBase
 from redis_batch.consumer import Consumer
 from redis_batch_test.test_utils import STREAM, GROUP,get_test_name
-
+from io import StringIO
 
 class TestMonitor(TestBase):
 
-    def test_monitor(self):
+    def test_monitor_to_many_pending_items(self):
         redis_consumer1 = Consumer(
             redis_conn=self.redis_conn,
             stream=STREAM,
             consumer_group=GROUP,
             batch_size=2,
+            max_wait_time_ms=100,
             consumer_id=get_test_name()
         )
         redis_consumer1.get_items()
@@ -25,8 +26,18 @@ class TestMonitor(TestBase):
             stream=STREAM,
             consumer_group=GROUP,
             batch_size=2,
+            max_wait_time_ms=100,
             consumer_id=get_test_name(suffix='2')
         )
         redis_consumer2.get_items()
-        #monitor.assign_items_to_active_consumer(items=1, group=GROUP, consumer_to_assign=redis_consumer2.consumer_id)
+        # Test stream and print functions of collected stats
+        monitor.print_monitoring_data('NonStream')
+        strm = StringIO()
+        assert  len(strm.getvalue()) == 0, strm.tell()
+        monitor.print_monitoring_data(output_stream=strm)
+        assert len(strm.getvalue()) > 0
+        # cleanup first consumer
+        monitor.collect_monitoring_data()
 
+    def test_monitor_long_idle(self):
+        pass

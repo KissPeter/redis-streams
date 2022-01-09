@@ -1,3 +1,5 @@
+import json
+import sys
 from collections import defaultdict
 from enum import Enum
 
@@ -11,6 +13,32 @@ class Status(Enum):
     OK = "OK"
     PENDING = "WARNING - too many pending items"
     IDLE = "WARNING - idle for long time"
+
+
+class ConsumerMetrics:
+    def __init__(
+        self, consumer_id: str, pending_items: int, idle_time: int, status: Status
+    ):
+        self.consumer_id = consumer_id
+        self.pending_items = pending_items
+        self.idle_time = idle_time
+        self.status = status
+
+    def __repr__(self):
+        return (
+            f"ConsumerMetrics(consumer_id={self.consumer_id}, "
+            f"pending_items={self.pending_items}, "
+            f"idle_time={self.idle_time}, "
+            f"status={self.status})"
+        )
+
+    def __str__(self):
+        return json.dumps([{
+            "consumer_id": self.consumer_id,
+            "pending_items": self.pending_items,
+            "idle_time": self.idle_time,
+            "status": self.status,
+        }])
 
 
 class Monitor(BaseRedisClass):
@@ -118,13 +146,12 @@ class Monitor(BaseRedisClass):
                             consumer_to_assign = consumer_id
                             consumer_to_assign_pending_items = pending_items
                     self.collected_consumers_data.append(
-                        [
-                            group.get("name"),
-                            consumer_id,
-                            consumer.get("pending"),
-                            consumer.get("idle"),
-                            status,
-                        ]
+                        ConsumerMetrics(
+                            consumer_id=consumer_id,
+                            idle_time=consumer.get("idle"),
+                            pending_items=consumer.get("pending"),
+                            status=status,
+                        )
                     )
         if consumer_to_assign and len(consumers_to_cleanup) and auto_cleanup:
             self.logger.debug("Cleaning up unhealthy consumers")
@@ -139,18 +166,16 @@ class Monitor(BaseRedisClass):
             self.logger.debug("No cleanup")
 
     def _generate_table(self):
+        rows = []
+        for row in self.collected_consumers_data:
+            rows.append([row.consumer_id, row.idle_time, row.pending_items, row.status])
         return tabulate(
-            self.collected_consumers_data,
-            headers=[
-                "Consumer Group",
-                "Consumer id",
-                "Pending items",
-                "Idle time",
-                "Status",
-            ],
+            rows,
+            headers=["Consumer id", "Idle time", "Pending items", "Status"],
+            tablefmt='grid'
         )
 
-    def print_monitoring_data(self, output_stream):
+    def print_monitoring_data(self, output_stream=sys.stdout):
         if hasattr(output_stream, "write"):
             output_stream.write(self._generate_table())
         else:
