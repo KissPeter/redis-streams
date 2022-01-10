@@ -47,6 +47,10 @@ class BaseRedisClass:
         max: maximum stream ID.
         item_count: number of messages to return
         consumername: name of a consumer to filter by (optional).
+         sample return data - could be used for DLQ: {'message_id': '1641847880578-0',
+         'consumer': 'test_monitor_to_many_pending_items',
+         'time_since_delivered': 203,
+         'times_delivered': 2}
         """
         return self.redis_conn.xpending_range(
             name=self.stream,

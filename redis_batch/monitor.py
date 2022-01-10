@@ -58,6 +58,8 @@ class Monitor(BaseRedisClass):
         self.min_wait_time_ms = min_wait_time_ms
         self.idle_time_ms_warning_threshold = idle_time_ms_warning_threshold
         self.collected_consumers_data = []
+        self.consumer_to_assign = None
+        self.unhealty_consumers = defaultdict(lambda: {})
 
     def _get_status_by_metrics(self, pending, idle):
         status = Status.OK.value
@@ -73,8 +75,8 @@ class Monitor(BaseRedisClass):
         """
         return idle > self.min_wait_time_ms and pending > self.batch_size
 
-    def _cleanup_old_consumer(
-        self, pending_count, consumer_to_delete, consumer_to_assign
+    def cleanup_unhealthy_consumer(
+        self, pending_count, consumer_to_delete
     ):
         """
         1. query the pending items of consumer
@@ -88,21 +90,22 @@ class Monitor(BaseRedisClass):
         for message in self.get_pending_items_of_consumer(
             item_count=pending_count, consumer_id=consumer_to_delete
         ):
+            print(f'>>>>>>>> {message}')
             messages_to_cleanup.append(message.get("message_id"))
         if len(messages_to_cleanup):
             self.logger.debug(
                 f"Moving {len(messages_to_cleanup)} items from "
-                f"{consumer_to_delete} to {consumer_to_assign}"
+                f"{consumer_to_delete} to {self.consumer_to_assign}"
             )
             # 2
             self.assign_items_to_active_consumer(
                 items=messages_to_cleanup,
-                consumer_to_assign=consumer_to_assign,
+                consumer_to_assign=self.consumer_to_assign,
                 group=self.consumer_group,
             )
             self.logger.debug(
                 f"Moved {len(messages_to_cleanup)} items from "
-                f"{consumer_to_delete} to {consumer_to_assign}"
+                f"{consumer_to_delete} to {self.consumer_to_assign}"
             )
         # 3
         resp = self.remove_consumer(consumer_to_delete=consumer_to_delete)
@@ -121,8 +124,8 @@ class Monitor(BaseRedisClass):
     def collect_monitoring_data(self, auto_cleanup=True):
 
         self.collected_consumers_data = []
-        consumers_to_cleanup = defaultdict(lambda: {})
-        consumer_to_assign = None
+        self.unhealty_consumers = defaultdict(lambda: {})
+        self.consumer_to_assign = None
         consumer_to_assign_pending_items = 0
 
         for group in self.redis_conn.xinfo_groups(self.stream):
@@ -138,12 +141,12 @@ class Monitor(BaseRedisClass):
                         pending=pending_items, idle=idle
                     )
                     if self._move_from_consumer(pending=pending_items, idle=idle):
-                        consumers_to_cleanup[group_name][consumer_id] = pending_items
+                        self.unhealty_consumers[group_name][consumer_id] = pending_items
                     else:
                         if not consumer_to_assign_pending_items:
                             pending_items = consumer_to_assign_pending_items
                         if pending_items <= consumer_to_assign_pending_items:
-                            consumer_to_assign = consumer_id
+                            self.consumer_to_assign = consumer_id
                             consumer_to_assign_pending_items = pending_items
                     self.collected_consumers_data.append(
                         ConsumerMetrics(
@@ -153,17 +156,19 @@ class Monitor(BaseRedisClass):
                             status=status,
                         )
                     )
-        if consumer_to_assign and len(consumers_to_cleanup) and auto_cleanup:
-            self.logger.debug("Cleaning up unhealthy consumers")
-            for group in consumers_to_cleanup.keys():
-                for consumer_id, pending_items in consumers_to_cleanup[group].items():
-                    self._cleanup_old_consumer(
-                        consumer_to_delete=consumer_id,
-                        pending_count=pending_items,
-                        consumer_to_assign=consumer_to_assign,
-                    )
+        if self.consumer_to_assign and len(self.unhealty_consumers) and auto_cleanup:
+            self.cleanup()
         else:
             self.logger.debug("No cleanup")
+
+    def cleanup(self):
+        self.logger.debug("Cleaning up unhealthy consumers")
+        for group in self.unhealty_consumers.keys():
+            for consumer_id, pending_items in self.unhealty_consumers[group].items():
+                self.cleanup_unhealthy_consumer(
+                    consumer_to_delete=consumer_id,
+                    pending_count=pending_items,
+                )
 
     def _generate_table(self):
         rows = []
