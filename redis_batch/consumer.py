@@ -35,9 +35,9 @@ class MsgId(Enum):
 class Consumer(BaseRedisClass):
     def __init__(
         self,
-        redis_conn: Redis = None,
-        stream: str = None,
-        consumer_group: str = None,
+        redis_conn: Redis,
+        stream: str,
+        consumer_group: str,
         consumer_id: Union[str, int] = f"{os.getpid()}{threading.get_ident()}",
         batch_size: int = 2,
         max_wait_time_ms: int = 10000,
@@ -101,7 +101,7 @@ class Consumer(BaseRedisClass):
 
     def _get_messages_from_stream(
         self,
-        latest_or_new: MsgId = MsgId.never_delivered.value,
+        latest_or_new: str = MsgId.never_delivered.value,
         requested_messages=None,
         wait_time=None,
     ) -> List[object]:
@@ -140,6 +140,7 @@ class Consumer(BaseRedisClass):
                 f"{self.consumer_group} as {self.consumer_id}",
                 exc_info=True,
             )
+            return []
 
     def _transform_redis_resp_to_objects(self, items):
         msgs = []

@@ -33,8 +33,8 @@ jobs:
                     if [ -f redis_batch_test/requirements_for_test.txt ]; then pip install -r redis_batch_test/requirements_for_test.txt; fi
             -   name: Lint
                 run: |
-                    flake8 redis_batch
-                    mypy redis_batch || echo 'Mypy would fail'
+                    flake8 redis_batch/
+                    mypy --explicit-package-bases --namespace-packages redis_batch/
                     vulture --min-confidence 100 redis_batch/
             -   uses: actions/checkout@v2
             -   uses: shogo82148/actions-setup-redis@v1

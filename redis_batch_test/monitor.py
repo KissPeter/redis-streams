@@ -72,3 +72,4 @@ class TestMonitor(TestBase):
                           idle_time_ms_warning_threshold=10, min_wait_time_ms=1)
         monitor.collect_monitoring_data(auto_cleanup=False)
         assert len(monitor.collected_consumers_data), monitor.collected_consumers_data
+        monitor.print_monitoring_data('NonStream')

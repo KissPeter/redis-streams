@@ -17,7 +17,7 @@ class Status(Enum):
 
 class ConsumerMetrics:
     def __init__(
-        self, consumer_id: str, pending_items: int, idle_time: int, status: Status
+        self, consumer_id: str, pending_items: int, idle_time: int, status: str
     ):
         self.consumer_id = consumer_id
         self.pending_items = pending_items
@@ -33,20 +33,22 @@ class ConsumerMetrics:
         )
 
     def __str__(self):
-        return json.dumps([{
-            "consumer_id": self.consumer_id,
-            "pending_items": self.pending_items,
-            "idle_time": self.idle_time,
-            "status": self.status,
-        }])
+        return json.dumps(
+            {
+                "consumer_id": self.consumer_id,
+                "pending_items": self.pending_items,
+                "idle_time": self.idle_time,
+                "status": self.status,
+            }
+        )
 
 
 class Monitor(BaseRedisClass):
     def __init__(
         self,
-        redis_conn: Redis = None,
-        stream: str = None,
-        consumer_group: str = None,
+        redis_conn: Redis,
+        stream: str,
+        consumer_group: str,
         batch_size: int = 2,
         min_wait_time_ms: int = 10,
         idle_time_ms_warning_threshold: int = 30000,
@@ -57,11 +59,11 @@ class Monitor(BaseRedisClass):
         self.batch_size = batch_size
         self.min_wait_time_ms = min_wait_time_ms
         self.idle_time_ms_warning_threshold = idle_time_ms_warning_threshold
-        self.collected_consumers_data = []
-        self.consumer_to_assign = None
-        self.unhealty_consumers = defaultdict(lambda: {})
+        self.collected_consumers_data: list = []
+        self.consumer_to_assign = ""
+        self.unhealty_consumers: dict = defaultdict(lambda: {})
 
-    def _get_status_by_metrics(self, pending, idle):
+    def _get_status_by_metrics(self, pending: int, idle: int) -> str:
         status = Status.OK.value
         if pending > self.batch_size:
             status = Status.PENDING.value
@@ -69,15 +71,15 @@ class Monitor(BaseRedisClass):
             status = Status.IDLE.value
         return status
 
-    def _move_from_consumer(self, pending, idle):
+    def _move_from_consumer(self, pending: int, idle: int) -> bool:
         """
         Decide if messages should be moved from the consumer or not.
         """
         return idle > self.min_wait_time_ms and pending > self.batch_size
 
     def cleanup_unhealthy_consumer(
-        self, pending_count, consumer_to_delete
-    ):
+        self, pending_count: int, consumer_to_delete: str
+    ) -> None:
         """
         1. query the pending items of consumer
         2. assign items to an active consumer
@@ -90,7 +92,6 @@ class Monitor(BaseRedisClass):
         for message in self.get_pending_items_of_consumer(
             item_count=pending_count, consumer_id=consumer_to_delete
         ):
-            print(f'>>>>>>>> {message}')
             messages_to_cleanup.append(message.get("message_id"))
         if len(messages_to_cleanup):
             self.logger.debug(
@@ -112,7 +113,9 @@ class Monitor(BaseRedisClass):
         if resp > 0:
             self.logger.error(f"{resp} messages lost")
 
-    def assign_items_to_active_consumer(self, items, group, consumer_to_assign):
+    def assign_items_to_active_consumer(
+        self, items: list, group: str, consumer_to_assign: str
+    ) -> int:
         return self.redis_conn.xclaim(
             name=self.stream,
             groupname=group,
@@ -121,11 +124,11 @@ class Monitor(BaseRedisClass):
             min_idle_time=self.min_wait_time_ms,
         )
 
-    def collect_monitoring_data(self, auto_cleanup=True):
+    def collect_monitoring_data(self, auto_cleanup=True) -> None:
 
         self.collected_consumers_data = []
         self.unhealty_consumers = defaultdict(lambda: {})
-        self.consumer_to_assign = None
+        self.consumer_to_assign = ""
         consumer_to_assign_pending_items = 0
 
         for group in self.redis_conn.xinfo_groups(self.stream):
@@ -177,7 +180,7 @@ class Monitor(BaseRedisClass):
         return tabulate(
             rows,
             headers=["Consumer id", "Idle time", "Pending items", "Status"],
-            tablefmt='grid'
+            tablefmt="grid",
         )
 
     def print_monitoring_data(self, output_stream=sys.stdout):

@@ -8,9 +8,7 @@ from redis_batch import PACKAGE
 
 
 class BaseRedisClass:
-    def __init__(
-        self, redis_conn: Redis = None, stream: str = None, consumer_group: str = None
-    ):
+    def __init__(self, redis_conn: Redis, stream: str, consumer_group: str):
         self.redis_conn = redis_conn
         self.stream = stream
         self.consumer_group = consumer_group
