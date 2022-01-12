@@ -1,5 +1,5 @@
-[mypy]
-ignore_missing_imports = True
-[mypy-redis.*]
-ignore_missing_imports = True
+[tool.mypy]
+ignore_missing_imports = true
+[tool.mypy-redis]
+ignore_missing_imports = true
 
