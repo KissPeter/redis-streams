@@ -34,6 +34,7 @@ jobs:
             -   name: Lint
                 run: |
                     flake8 redis_batch/
+                    mypy --install-types --non-interactive redis_batch/
                     mypy --explicit-package-bases --namespace-packages redis_batch/
                     vulture --min-confidence 100 redis_batch/
             -   uses: actions/checkout@v2
