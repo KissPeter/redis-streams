@@ -71,12 +71,6 @@ class Monitor(BaseRedisClass):
             status = Status.IDLE.value
         return status
 
-    def _move_from_consumer(self, pending: int, idle: int) -> bool:
-        """
-        Decide if messages should be moved from the consumer or not.
-        """
-        return idle > self.min_wait_time_ms and pending > self.batch_size
-
     def cleanup_unhealthy_consumer(
         self, pending_count: int, consumer_to_delete: str
     ) -> None:
@@ -143,7 +137,7 @@ class Monitor(BaseRedisClass):
                     status = self._get_status_by_metrics(
                         pending=pending_items, idle=idle
                     )
-                    if self._move_from_consumer(pending=pending_items, idle=idle):
+                    if status != Status.OK.value:
                         self.unhealty_consumers[group_name][consumer_id] = pending_items
                     else:
                         if not consumer_to_assign_pending_items:
@@ -159,10 +153,15 @@ class Monitor(BaseRedisClass):
                             status=status,
                         )
                     )
-        if self.consumer_to_assign and len(self.unhealty_consumers) and auto_cleanup:
-            self.cleanup()
+        if auto_cleanup:
+            if self.consumer_to_assign and len(self.unhealty_consumers):
+                self.cleanup()
+            elif self.consumer_to_assign:
+                self.logger.debug("No cleanup, as no unhealty consumers")
+            else:
+                self.logger.debug("No cleanup, as no healty consumer to assign")
         else:
-            self.logger.debug("No cleanup")
+            self.logger.debug("Auto cleanup disabled")
 
     def cleanup(self):
         self.logger.debug("Cleaning up unhealthy consumers")

@@ -1,16 +1,10 @@
-import random
-import time
-from typing import Union
+#!/usr/bin/env python3
+from time import sleep
 
 from redis import Redis
 
+from common import STREAM, GROUP, get_random_wait_time
 from redis_batch.common import BaseRedisClass
-
-
-def get_random_wait_time(
-    min_wait: Union[float, int] = 2, max_wait: Union[float, int] = 5
-) -> int:
-    return int(random.randint(min_wait * 10, max_wait * 10) / 10)
 
 
 class Producer(BaseRedisClass):
@@ -34,11 +28,11 @@ class Producer(BaseRedisClass):
             sample_data = {"iteration": iteration, "message": self.consumer_group}
             print(f" {iteration}. Adding message to steam: {sample_data}")
             self._add_message_to_stream(sample_data)
-            time.sleep(get_random_wait_time())
+            sleep(get_random_wait_time())
             iteration += 1
 
 
 if __name__ == "__main__":
-    STREAM = "BatchStream"
-    GROUP = "BatchGroup"
-    prod = Producer(redis_conn=Redis(), stream=STREAM, consumer_group=GROUP)
+    prod = Producer(
+        redis_conn=Redis(decode_responses=True), stream=STREAM, consumer_group=GROUP
+    )

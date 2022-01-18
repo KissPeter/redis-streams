@@ -42,6 +42,7 @@ class Consumer(BaseRedisClass):
         batch_size: int = 2,
         max_wait_time_ms: int = 10000,
         poll_time_ms: int = 100,
+        cleanup_on_exit=True,
     ):
         """
         poll_time_ms: poll time of one iteration
@@ -56,7 +57,9 @@ class Consumer(BaseRedisClass):
         self.batch_size = batch_size
         self.poll_time_ms = poll_time_ms
         self.max_wait_time_ms = max_wait_time_ms
-        self.hard_stop_time = self._get_hard_stop_time()
+        self.hard_stop_time = datetime.utcnow()
+        self.cleanup_on_exit = cleanup_on_exit
+        self._set_hard_stop_time()
 
     def _wait_for_more_messages(self):
         _now = datetime.utcnow()
@@ -70,10 +73,13 @@ class Consumer(BaseRedisClass):
         )
         return all([date_constraint, message_number_constraint])
 
-    def _get_hard_stop_time(self):
-        return datetime.utcnow() + timedelta(microseconds=self.max_wait_time_ms * 1000)
+    def _set_hard_stop_time(self):
+        self.hard_stop_time = datetime.utcnow() + timedelta(
+            microseconds=self.max_wait_time_ms * 1000
+        )
 
-    def get_items(self):
+    def get_items(self) -> List[RedisMsg]:
+        self._set_hard_stop_time()
         self.assigned_messages = self._get_no_of_messages_already_assigned()
         while self._wait_for_more_messages():
             self.assigned_messages += self._get_new_items_to_consumer(
@@ -104,7 +110,7 @@ class Consumer(BaseRedisClass):
         latest_or_new: str = MsgId.never_delivered.value,
         requested_messages=None,
         wait_time=None,
-    ) -> List[object]:
+    ) -> List[RedisMsg]:
         """
         The command to read data from a group is XREADGROUP.
         In our example, when App A starts processing data,
@@ -149,12 +155,17 @@ class Consumer(BaseRedisClass):
                 if items[0][0] == self.stream:
                     items = items[0][1]
             except IndexError:
-                self.logger.warning(items, exc_info=True)
+                self.logger.warning(
+                    f"Failed to process messages. "
+                    f"Did you set decode_responses=True "
+                    f"of the Redis connection",
+                    exc_info=True,
+                )
         for item in items:
             msgs.append(RedisMsg(msgid=item[0], content=item[1]))
         return msgs
 
-    def remove_item_from_stream(self, item_id):
+    def remove_item_from_stream(self, item_id: str):
         """
         The data in the pending entries lists of your consumers will remain
         there until App A and App B acknowledge to Redis self.streams that they
@@ -164,6 +175,7 @@ class Consumer(BaseRedisClass):
         name: name of the self.stream.
         groupname: name of the consumer group.
         *ids: message ids to acknowlege.
+        :param item_id: id to acknowledge
         """
         self.redis_conn.xack(self.stream, self.consumer_group, item_id)
 
@@ -180,4 +192,5 @@ class Consumer(BaseRedisClass):
         )
 
     def __del__(self):
-        self.remove_consumer(self.consumer_id)
+        if self.cleanup_on_exit:
+            self.remove_consumer(self.consumer_id)
