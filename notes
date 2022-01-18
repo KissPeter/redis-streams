@@ -4,3 +4,13 @@ xlen tstream
 xgroup create tstream tgroup 0
 xreadgroup group tgroup consumer1 count 2 streams tstream >
 xpending tstream tgroup - + 2 consumer1
+
+Scaler:
+ Xlen test_stream
+(integer) 177
+Alternative:
+XINFO STREAM mystream
+ 1) length
+XINFO GROUPS mystream -> pending
+if diff is big -> scale out
+if ~ no diff   -> scale in
