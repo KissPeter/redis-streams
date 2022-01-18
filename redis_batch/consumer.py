@@ -156,9 +156,8 @@ class Consumer(BaseRedisClass):
                     items = items[0][1]
             except IndexError:
                 self.logger.warning(
-                    f"Failed to process messages. "
-                    f"Did you set decode_responses=True "
-                    f"of the Redis connection",
+                    "Failed to process messages. Did you set decode_responses=True "
+                    "of the Redis connection",
                     exc_info=True,
                 )
         for item in items:

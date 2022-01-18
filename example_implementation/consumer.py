@@ -25,9 +25,6 @@ if __name__ == "__main__":
     iteration = 0
     while True:
         messages = consumer.get_items()
-        if not len(messages):
-            print(f"No available message, wait for a second")
-            sleep(1)
         for i, item in enumerate(messages):
             sleep_time = get_random_wait_time()
             print(
