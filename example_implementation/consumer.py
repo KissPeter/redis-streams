@@ -15,10 +15,6 @@ def process_message(item: RedisMsg):
 
 
 if __name__ == "__main__":
-    import logging
-    from redis_batch import PACKAGE
-    logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger(PACKAGE)
     consumer = Consumer(
         redis_conn=Redis(decode_responses=True),
         stream=STREAM,

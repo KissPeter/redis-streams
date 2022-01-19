@@ -29,13 +29,17 @@ class Scaler(BaseRedisClass):
     def collect_metrics(self) -> Tuple[int, int]:
         group_info = self.redis_conn.xinfo_groups(name=self.stream)
         for group in group_info:
-            if group.get('name') == self.consumer_group:
+            if group.get("name") == self.consumer_group:
                 self.stream_pending = group.get("pending", 0)
+                last_delivered = group.get("last-delivered-id")
                 break
         stream_info = self.redis_conn.xinfo_stream(name=self.stream)
-        self.stream_lenght = stream_info.get("length", 0)
-        if self.stream_pending < self.stream_lenght:
-            self.stream_lenght = self.stream_lenght- self.stream_pending
+        last_generated = stream_info.get("last-generated-id")
+        self.stream_lenght = len(
+            self.redis_conn.xrange(
+                name=self.stream, min=last_delivered, max=last_generated
+            )
+        )
         return self.stream_lenght, self.stream_pending
 
     @staticmethod
@@ -51,15 +55,22 @@ class Scaler(BaseRedisClass):
         if not all([self.stream_pending, self.stream_lenght]):
             self.collect_metrics()
         if self.stream_pending:
-            self.lenght_pending_rate = round(max(
-                min(self.stream_lenght / self.stream_pending * 100, 100), 1
-            ),4)
+            self.lenght_pending_rate = round(
+                max(min(self.stream_lenght / self.stream_pending * 100, 100), 1), 4
+            )
         else:
-            # if no pending item, scale out is necessary
-            self.lenght_pending_rate = 100
+            # if no pending item, no scale
+            self.lenght_pending_rate = 0
 
     def _calculate_scale(self, scale_in_rate: int, scale_out_rate: int) -> str:
-        if self.lenght_pending_rate < scale_in_rate:
+
+        if (
+            self.lenght_pending_rate == 0 and self.stream_lenght == 1
+        ):  # xrange gives back 1 item
+            scale = Scale.NOSCALE.value
+        elif self.lenght_pending_rate == 0 and self.stream_lenght >= 1:
+            scale = Scale.OUT.value
+        elif self.lenght_pending_rate < scale_in_rate:
             scale = Scale.IN.value
         elif self.lenght_pending_rate > scale_out_rate:
             scale = Scale.OUT.value
@@ -76,9 +87,11 @@ class Scaler(BaseRedisClass):
         :param scale_in_rate:  treshold rate of scale in in percent
         :return: rate, suggestion
         """
-        self._validate_scaling_params(scale_in_rate=scale_in_rate,
-                                      scale_out_rate=scale_out_rate)
+        self._validate_scaling_params(
+            scale_in_rate=scale_in_rate, scale_out_rate=scale_out_rate
+        )
         self._calculate_rate()
 
         return self.lenght_pending_rate, self._calculate_scale(
-            scale_in_rate=scale_in_rate, scale_out_rate=scale_out_rate)
+            scale_in_rate=scale_in_rate, scale_out_rate=scale_out_rate
+        )
