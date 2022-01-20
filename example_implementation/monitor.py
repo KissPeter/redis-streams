@@ -13,7 +13,7 @@ if __name__ == "__main__":
     logging.getLogger(PACKAGE)
 
     monitor = Monitor(
-        redis_conn=Redis(decode_responses=True),
+        redis_conn=Redis(),
         stream=STREAM,
         consumer_group=GROUP,
         batch_size=10,

@@ -21,6 +21,8 @@ if __name__ == "__main__":
             scale_out_rate=60, scale_in_rate=20
         )
         print(
-            f"Consumers should be {suggestion} as stream length ({scaler.stream_lenght}) / pending ({scaler.stream_pending}) rate is {rate}%"
+            f"Consumers should be {suggestion} as stream length "
+            f"({scaler.stream_lenght}) / pending ({scaler.stream_pending}) "
+            f"rate is {rate}%"
         )
         sleep(2)
