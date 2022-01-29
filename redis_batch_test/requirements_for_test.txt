@@ -13,4 +13,5 @@ pytest
 pytest-cov
 pytest-html
 pytest-random-order
+pytest-ordering
 

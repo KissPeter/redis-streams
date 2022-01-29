@@ -90,13 +90,11 @@ class Consumer(BaseRedisClass):
         )
 
     def _get_new_items_to_consumer(self, requested_messages):
-        print(f'>>>>>>>>>> GET {requested_messages} new messages')
         items = self._get_messages_from_stream(
             latest_or_new=MsgId.never_delivered.value,
             requested_messages=requested_messages,
         )
         self.logger.debug(f"Received {len(items)} new items from stream")
-        print(f">>>>>>>>>>>Received {len(items)} new items from stream")
         return len(items)
 
     def _get_no_of_messages_already_assigned(self):

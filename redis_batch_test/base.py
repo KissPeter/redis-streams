@@ -20,8 +20,6 @@ class TestBase:
         assert self.redis_conn.xlen(name=STREAM) == len(TEST_DATASET)
         yield
         self.redis_conn.xtrim(STREAM, maxlen=0)
-        for consumer in self.redis_conn.xinfo_consumers(name=STREAM, groupname=GROUP):
-            self.logger.debug(f'Delete consumer {consumer}')
-            self.redis_conn.xgroup_delconsumer(name=STREAM,
-                                               groupname=GROUP,
-                                               consumername=consumer.get("name"))
+        for group in self.redis_conn.xinfo_groups(name=STREAM):
+            self.redis_conn.xgroup_destroy(name=STREAM, groupname=group.get("name"))
+        self.redis_conn.delete(STREAM)
