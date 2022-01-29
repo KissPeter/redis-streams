@@ -24,7 +24,7 @@ class RedisMsg:
 
 class MsgId(Enum):
     """
-    '>' add new messages from group consumer group
+    '>' next undelivered messages in the group
     '0' get messages already added to consumer group
     """
 
@@ -41,7 +41,7 @@ class Consumer(BaseRedisClass):
         consumer_id: Union[str, int] = f"{os.getpid()}{threading.get_ident()}",
         batch_size: int = 2,
         max_wait_time_ms: int = 10000,
-        poll_time_ms: int = 100,
+        poll_time_ms: int = 1000,
         cleanup_on_exit=True,
     ):
         """
@@ -90,11 +90,13 @@ class Consumer(BaseRedisClass):
         )
 
     def _get_new_items_to_consumer(self, requested_messages):
+        print(f'>>>>>>>>>> GET {requested_messages} new messages')
         items = self._get_messages_from_stream(
             latest_or_new=MsgId.never_delivered.value,
             requested_messages=requested_messages,
         )
         self.logger.debug(f"Received {len(items)} new items from stream")
+        print(f">>>>>>>>>>>Received {len(items)} new items from stream")
         return len(items)
 
     def _get_no_of_messages_already_assigned(self):

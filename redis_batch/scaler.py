@@ -25,21 +25,31 @@ class Scaler(BaseRedisClass):
         self.stream_lenght = 0
         self.stream_pending = 0
         self.lenght_pending_rate = 0
+        self.consumers_of_group = 0
 
     def collect_metrics(self) -> Tuple[int, int]:
+        last_delivered = None
         group_info = self.redis_conn.xinfo_groups(name=self.stream)
         for group in group_info:
             if group.get("name") == self.consumer_group:
                 self.stream_pending = group.get("pending", 0)
+                self.consumers_of_group = group.get("consumers", 0)
                 last_delivered = group.get("last-delivered-id")
                 break
+        # XLEN provides the size of the stream, but doesn't consider messages processed
+        # by our consumer group
         stream_info = self.redis_conn.xinfo_stream(name=self.stream)
         last_generated = stream_info.get("last-generated-id")
-        self.stream_lenght = len(
-            self.redis_conn.xrange(
-                name=self.stream, min=last_delivered, max=last_generated
+        if not last_delivered:
+            self.stream_lenght = self.redis_conn.xlen(name=self.stream)
+        elif last_generated == last_delivered:
+            self.stream_lenght = 0
+        else:
+            self.stream_lenght = len(
+                self.redis_conn.xrange(
+                    name=self.stream, min=last_delivered, max=last_generated
+                )
             )
-        )
         return self.stream_lenght, self.stream_pending
 
     @staticmethod
@@ -70,7 +80,7 @@ class Scaler(BaseRedisClass):
             scale = Scale.NOSCALE.value
         elif self.lenght_pending_rate == 0 and self.stream_lenght >= 1:
             scale = Scale.OUT.value
-        elif self.lenght_pending_rate < scale_in_rate:
+        elif self.lenght_pending_rate < scale_in_rate and self.consumers_of_group > 1:
             scale = Scale.IN.value
         elif self.lenght_pending_rate > scale_out_rate:
             scale = Scale.OUT.value

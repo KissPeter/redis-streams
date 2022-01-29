@@ -24,7 +24,7 @@ class BaseRedisClass:
         """
         try:
             self.redis_conn.xgroup_create(
-                name=self.stream, groupname=self.consumer_group, id="0", mkstream=True
+                name=self.stream, groupname=self.consumer_group, id="0-0", mkstream=True
             )
             self.logger.debug(f"{self.consumer_group} consumer group has been created")
         except ResponseError:

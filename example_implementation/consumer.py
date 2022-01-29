@@ -21,12 +21,12 @@ if __name__ == "__main__":
         redis_conn=Redis(decode_responses=True),
         stream=STREAM,
         consumer_group=GROUP,
-        batch_size=100,
+        batch_size=10,
         max_wait_time_ms=30000,
     )
     while True:
         messages = consumer.get_items()
         for i, item in enumerate(messages):
-            print(f"Pocessing {i}/{len(messages)} message:{item}")
+            print(f"Pocessing {i+1}/{len(messages)} message:{item}")
             process_message(item=item)
             consumer.remove_item_from_stream(item_id=item.msgid)

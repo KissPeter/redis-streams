@@ -58,10 +58,8 @@ Periodically check the activity of the consumers warns if they are idle  - not f
         consumer_group=GROUP,
         batch_size=10,   # batch size has to be tha same as for consumers 
     )
-    while True:
-        monitor.collect_monitoring_data(auto_cleanup=True)
-        monitor.print_monitoring_data()
-        sleep(2)
+    monitor.collect_monitoring_data(auto_cleanup=True)
+    monitor.print_monitoring_data()
 ```
 Output
 ```
