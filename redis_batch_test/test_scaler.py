@@ -85,6 +85,9 @@ class TestMonitor(TestBase):
         assert suggestion == Scale.IN.value, f"rate: {rate}, suggestion: {suggestion}"
 
     def test_scaler_multiple_consumer_groups(self):
+        scaler = Scaler(redis_conn=self.redis_conn, stream=STREAM,
+                        consumer_group=GROUP)
+        scaler.collect_metrics()
         Consumer(
             redis_conn=self.redis_conn,
             stream=STREAM,
@@ -96,13 +99,11 @@ class TestMonitor(TestBase):
         Consumer(
             redis_conn=self.redis_conn,
             stream=STREAM,
-            consumer_group=f"{GROUP}_2",
+            consumer_group=f"_{GROUP}",
             batch_size=2,
             max_wait_time_ms=100,
             consumer_id=get_test_name()
         ).get_items()
-        scaler = Scaler(redis_conn=self.redis_conn, stream=STREAM,
-                        consumer_group=GROUP)
         scaler.collect_metrics()
 
     def test_scaler_no_consumers(self):

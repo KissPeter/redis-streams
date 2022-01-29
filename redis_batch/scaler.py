@@ -35,7 +35,6 @@ class Scaler(BaseRedisClass):
                 self.stream_pending = group.get("pending", 0)
                 self.consumers_of_group = group.get("consumers", 0)
                 last_delivered = group.get("last-delivered-id")
-                # we loose some test coverage, but quicker
                 break
         # XLEN provides the size of the stream, but doesn't consider messages processed
         # by our consumer group
@@ -48,11 +47,15 @@ class Scaler(BaseRedisClass):
         else:
             # xrange output, the len of the messages should be decreased by one as it
             # includes the last delivered
-            self.stream_lenght = max(0, len(
-                self.redis_conn.xrange(
-                    name=self.stream, min=last_delivered, max=last_generated
+            self.stream_lenght = max(
+                0,
+                len(
+                    self.redis_conn.xrange(
+                        name=self.stream, min=last_delivered, max=last_generated
+                    )
                 )
-            ) - 1)
+                - 1,
+            )
         return self.stream_lenght, self.stream_pending
 
     @staticmethod
@@ -77,7 +80,7 @@ class Scaler(BaseRedisClass):
 
     def _calculate_scale(self, scale_in_rate: int, scale_out_rate: int) -> str:
 
-        if (self.lenght_pending_rate == 0 and self.stream_lenght == 0):
+        if self.lenght_pending_rate == 0 and self.stream_lenght == 0:
             scale = Scale.NOSCALE.value
         elif self.lenght_pending_rate == 0 and self.stream_lenght >= 1:
             scale = Scale.OUT.value
