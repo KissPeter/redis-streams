@@ -1,7 +1,7 @@
 import logging
 import os
 
-from redis_batch import PACKAGE
+from redis_streams import PACKAGE
 
 STREAM = "test_stream"
 GROUP = "test_group"

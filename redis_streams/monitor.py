@@ -6,7 +6,7 @@ from enum import Enum
 from redis import Redis
 from tabulate import tabulate
 
-from redis_batch.common import BaseRedisClass
+from redis_streams.common import BaseRedisClass
 
 
 class Status(Enum):

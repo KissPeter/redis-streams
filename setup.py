@@ -11,7 +11,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 __version__ = re.search(
     r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-    open("redis_batch/__init__.py").read(),
+    open("redis_streams/__init__.py").read(),
 ).group(1)
 
 
@@ -39,7 +39,7 @@ def get_requirements():
 
 
 setup_options = dict(
-    name='redis_batch',
+    name='redis_streams',
     version=__version__,
     description='Batch collection based on Redis Streams',
     long_description=get_readme(),
@@ -67,8 +67,8 @@ setup_options = dict(
         'Programming Language :: Python :: 3.11'
     ],
     python_requires='>=3.6, <4',
-    package_data={"redis_batch": ['*.py']},
-    exclude_package_data={"redis_batch_test": ["*"]}
+    package_data={"redis_streams": ['*.py']},
+    exclude_package_data={"redis_streams_test": ["*"]}
 )
 
 setup(**setup_options)

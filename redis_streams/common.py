@@ -4,7 +4,7 @@ from typing import List
 from redis import Redis
 from redis.exceptions import ResponseError
 
-from redis_batch import PACKAGE
+from redis_streams import PACKAGE
 
 
 class BaseRedisClass:

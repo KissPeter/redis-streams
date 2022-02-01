@@ -1,7 +1,7 @@
 import pytest
 from redis import Redis
 
-from redis_batch_test.test_utils import STREAM, GROUP, \
+from redis_streams_test.test_utils import STREAM, GROUP, \
     set_logger, TEST_DATASET
 
 

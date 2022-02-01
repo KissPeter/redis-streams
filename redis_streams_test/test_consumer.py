@@ -1,8 +1,8 @@
 import datetime
 
-from redis_batch.consumer import Consumer
-from redis_batch_test.base import TestBase
-from redis_batch_test.test_utils import STREAM, GROUP, \
+from redis_streams.consumer import Consumer
+from redis_streams_test.base import TestBase
+from redis_streams_test.test_utils import STREAM, GROUP, \
     get_test_name, TEST_DATASET
 
 

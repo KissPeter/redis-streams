@@ -1,9 +1,9 @@
 import pytest
 
-from redis_batch.consumer import Consumer
-from redis_batch.scaler import Scaler, Scale
-from redis_batch_test.base import TestBase
-from redis_batch_test.test_utils import STREAM, GROUP, get_test_name, TEST_DATASET
+from redis_streams.consumer import Consumer
+from redis_streams.scaler import Scaler, Scale
+from redis_streams_test.base import TestBase
+from redis_streams_test.test_utils import STREAM, GROUP, get_test_name, TEST_DATASET
 
 
 class TestMonitor(TestBase):

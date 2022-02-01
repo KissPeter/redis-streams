@@ -4,7 +4,7 @@ from time import sleep
 from redis import Redis
 
 from common import STREAM, GROUP, get_random_wait_time
-from redis_batch.consumer import Consumer, RedisMsg
+from redis_streams.consumer import Consumer, RedisMsg
 
 
 def process_message(item: RedisMsg):

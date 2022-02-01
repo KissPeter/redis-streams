@@ -5,8 +5,8 @@ from time import sleep
 from redis import Redis
 
 from common import STREAM, GROUP
-from redis_batch import PACKAGE
-from redis_batch.scaler import Scaler
+from redis_streams import PACKAGE
+from redis_streams.scaler import Scaler
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

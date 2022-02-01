@@ -7,7 +7,7 @@ from typing import List, Union
 from redis import Redis
 from redis.exceptions import ResponseError
 
-from redis_batch.common import BaseRedisClass
+from redis_streams.common import BaseRedisClass
 
 
 class RedisMsg:
