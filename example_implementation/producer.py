@@ -6,7 +6,7 @@ from redis import Redis
 from common import STREAM, get_random_wait_time
 
 if __name__ == "__main__":
-    redis_conn = Redis(decode_responses=True)
+    redis_conn = Redis()
     iteration = 0
     while True:
         sample_data = {"iteration": iteration, "message": "stuff goes here"}

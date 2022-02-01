@@ -6,7 +6,7 @@ from enum import Enum
 from redis import Redis
 from tabulate import tabulate
 
-from redis_streams.common import BaseRedisClass
+from redis_streams.common import ConsumerAndMonitor
 
 
 class Status(Enum):
@@ -43,7 +43,7 @@ class ConsumerMetrics:
         )
 
 
-class Monitor(BaseRedisClass):
+class Monitor(ConsumerAndMonitor):
     def __init__(
         self,
         redis_conn: Redis,

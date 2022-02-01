@@ -39,16 +39,16 @@ def get_requirements():
 
 
 setup_options = dict(
-    name='redis_streams',
+    name='redis-streams',
     version=__version__,
-    description='Batch collection based on Redis Streams',
+    description='Redis Streams su',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
     author='Peter Kiss',
     author_email='peter.kiss@linuxadm.hu',
-    url='https://github.com/KissPeter/Redis-Batch/',
+    url='https://github.com/KissPeter/redis-streams/',
     scripts=[],
-    packages=find_packages(exclude=["test"]),
+    packages=find_packages(exclude=["redis_streams_test"]),
     install_requires=get_requirements(),
     license="GNU General Public License v3.0",
     classifiers=[  # https://pypi.org/classifiers/

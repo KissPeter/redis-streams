@@ -1,16 +1,16 @@
-#Redis Batch
-This package builds on [Redis Streams](https://redis.io/topics/streams-intro) and provides an easy to use interface for collection and batch processing.
-Designed for a highly available, scalable and distributed environment, it thus offers, in addition to the main functionality, monitoring and scale capabilities. 
+# Redis-Streams 
+This package builds on [Redis Streams](https://redis.io/topics/streams-intro) and provides an easy to use interface for batch collection and processing. Simplifies the consumer group and consumers management.
+Designed for a highly available, scalable and distributed environment, it thus offers, in addition to the main functionality, monitoring and scaling capabilities. 
 
 The main idea is that Redis Streams supports several message producers. The messages  then organized into consumer groups where multiple consumers can collect a batch of items, process them and acknowledge the successfully processed ones.
 If processing fails, the message has not been acknowledged will be part of the next batch. In case of consumer failure the monitor component will re-assign the related messages to a healthy consumer this way messages don't get lost.
 Optional scaling component monitors incoming/processed message rate and suggests consumer scale if necessary
 
-##Installation
+## Installation
 
 Latest version:
 ```
-pip3 install redis-batch
+pip3 install redis-streams
 ```
 
 ## Components
@@ -52,14 +52,14 @@ while True:
 Periodically check the activity of the consumers warns if they are idle  - not fetching message from the Stream for longer than the preconfigured inactivity threshold or have more assigned messages than the batch size. Automatic or on-demand cleanup are also supported.
 #### Example code
 ```python
-    monitor = Monitor(
-        redis_conn=Redis(),
-        stream=STREAM,
-        consumer_group=GROUP,
-        batch_size=10,   # batch size has to be tha same as for consumers 
-    )
-    monitor.collect_monitoring_data(auto_cleanup=True)
-    monitor.print_monitoring_data()
+monitor = Monitor(
+    redis_conn=Redis(),
+    stream=STREAM,
+    consumer_group=GROUP,
+    batch_size=10,   # batch size has to be tha same as for consumers 
+)
+monitor.collect_monitoring_data(auto_cleanup=True)
+monitor.print_monitoring_data()
 ```
 Output
 ```
@@ -83,20 +83,20 @@ Output
 By checking the number of messages waiting to be assigned and the number of pending items, utilization ratio can be calculated. Once this rate crosses a lower (scale in) or higher (scale out) the code will give a suggestion of scale in / out. 
 #### Example code
 ```python
-    scaler = Scaler(
-        redis_conn=Redis(decode_responses=True),
-        stream=STREAM,
-        consumer_group=GROUP
-    )
-    scaler.collect_metrics()
-    rate, suggestion = scaler.get_scale_decision(
-        scale_out_rate=60, scale_in_rate=20
-    )
-    print(
-        f"Consumers should be {suggestion} as stream length "
-        f"({scaler.stream_lenght}) / pending ({scaler.stream_pending}) "
-        f"rate is {rate}%"
-    )
+scaler = Scaler(
+    redis_conn=Redis(decode_responses=True),
+    stream=STREAM,
+    consumer_group=GROUP
+)
+scaler.collect_metrics()
+rate, suggestion = scaler.get_scale_decision(
+    scale_out_rate=60, scale_in_rate=20
+)
+print(
+    f"Consumers should be {suggestion} as stream length "
+    f"({scaler.stream_lenght}) / pending ({scaler.stream_pending}) "
+    f"rate is {rate}%"
+)
 ```
 Output
 ```

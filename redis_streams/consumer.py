@@ -7,7 +7,7 @@ from typing import List, Union
 from redis import Redis
 from redis.exceptions import ResponseError
 
-from redis_streams.common import BaseRedisClass
+from redis_streams.common import ConsumerAndMonitor
 
 
 class RedisMsg:
@@ -32,7 +32,7 @@ class MsgId(Enum):
     already_deliverd = "0"
 
 
-class Consumer(BaseRedisClass):
+class Consumer(ConsumerAndMonitor):
     def __init__(
         self,
         redis_conn: Redis,
@@ -156,7 +156,7 @@ class Consumer(BaseRedisClass):
                     items = items[0][1]
             except IndexError:
                 self.logger.warning(
-                    "Failed to process messages. Did you set decode_responses=True "
+                    "Failed to process messages. Did you set  "
                     "of the Redis connection",
                     exc_info=True,
                 )

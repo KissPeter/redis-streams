@@ -10,6 +10,7 @@ from redis_streams import PACKAGE
 class BaseRedisClass:
     def __init__(self, redis_conn: Redis, stream: str, consumer_group: str):
         self.redis_conn = redis_conn
+        self.redis_conn.decode_responses = True
         self.stream = stream
         self.consumer_group = consumer_group
         self.logger = logging.getLogger(PACKAGE)
@@ -32,6 +33,12 @@ class BaseRedisClass:
 
     def prepare_redis(self) -> None:
         self._create_consumer_group()
+
+
+class ConsumerAndMonitor(BaseRedisClass):
+
+    def __init__(self, redis_conn: Redis, stream: str, consumer_group: str):
+        super().__init__(redis_conn, stream, consumer_group)
 
     def get_pending_items_of_consumer(
         self, item_count: int, consumer_id: str

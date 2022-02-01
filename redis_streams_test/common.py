@@ -1,4 +1,4 @@
-from redis_streams.common import BaseRedisClass
+from redis_streams.common import ConsumerAndMonitor
 from redis_streams.consumer import Consumer
 from redis_streams_test.base import TestBase
 from redis_streams_test.test_utils import STREAM, GROUP, \
@@ -9,8 +9,8 @@ class TestCommon(TestBase):
 
     @classmethod
     def setup_class(cls):
-        cls.base = BaseRedisClass(redis_conn=cls.redis_conn, stream=STREAM,
-                                  consumer_group=GROUP)
+        cls.base = ConsumerAndMonitor(redis_conn=cls.redis_conn, stream=STREAM,
+                                      consumer_group=GROUP)
 
     def test_get_pending_items_of_consumer(self):
         redis_consumer = Consumer(
