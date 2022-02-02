@@ -36,7 +36,6 @@ class BaseRedisClass:
 
 
 class ConsumerAndMonitor(BaseRedisClass):
-
     def __init__(self, redis_conn: Redis, stream: str, consumer_group: str):
         super().__init__(redis_conn, stream, consumer_group)
 
