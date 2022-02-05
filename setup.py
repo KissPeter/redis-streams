@@ -17,11 +17,13 @@ __version__ = re.search(
 
 def get_readme():
     readme = list()
-    with open(os.path.join(here, "README.md"), "r") as f:
+    with open("README.md", "r") as f:
         skip_lines = True
         for line in f.read().splitlines():
-            if line.startswith('# Redis Batch'):
+            if line.startswith('# Redis-Streams'):
                 skip_lines = False
+            if line.startswith('### Runnel'):
+                skip_lines = True
             if skip_lines:
                 continue
             else:
@@ -41,12 +43,19 @@ def get_requirements():
 setup_options = dict(
     name='redis-streams',
     version=__version__,
-    description='Redis Streams su',
+    description="Redis Streams client implementation for high availability usage "
+                "including consumer, monitor and scaler implementation",
     long_description=get_readme(),
     long_description_content_type="text/markdown",
     author='Peter Kiss',
     author_email='peter.kiss@linuxadm.hu',
     url='https://github.com/KissPeter/redis-streams/',
+    project_urls={
+        "Documentation": "https://github.com/KissPeter/redis-streams",
+        "Changes": "https://github.com/KissPeter/redis-streams//releases",
+        "Code": "https://github.com/KissPeter/redis-streams",
+        "Issue tracker": "https://github.com/KissPeter/redis-streams//issues",
+    },
     scripts=[],
     packages=find_packages(exclude=["redis_streams_test"]),
     install_requires=get_requirements(),
@@ -56,15 +65,14 @@ setup_options = dict(
         'Intended Audience :: Developers',
         'Topic :: Communications',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: System :: Distributed Computing'
+        'Topic :: System :: Distributed Computing',
         'Natural Language :: English',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11'
+        'Programming Language :: Python :: 3.10'
     ],
     python_requires='>=3.6, <4',
     package_data={"redis_streams": ['*.py']},

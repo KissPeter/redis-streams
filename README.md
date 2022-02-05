@@ -105,8 +105,8 @@ Consumers should be NO_SCALE as stream length (18) / pending (79) rate is 22.784
 
 ```
 ## License
- This project is licensed under the terms of the GPL3.0 license.
+ This project is licensed under the terms of the GPL3.0.
 
 ### Runnel
-[Runnel](https://runnel.dev/guide.html?highlight=batch#batching) is a great project with batch collection capability however threatenss the whole batch as one entity therefore may acknowledges all the items even they are not processed
+[Runnel](https://runnel.dev/guide.html?highlight=batch#batching) is a great project with batch collection capability however treats the whole batch as one entity therefore may acknowledge all the items even they are not processed.
 
