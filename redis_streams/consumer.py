@@ -45,9 +45,19 @@ class Consumer(ConsumerAndMonitor):
         cleanup_on_exit=True,
     ):
         """
-        poll_time_ms: poll time of one iteration
-        max_wait_time_ms: Approximate maximum time to wait for the batch to be complete.
-        Client returns if time pass even if the batch is not full. 0 means: no return
+        The consumer registers in the consumer group and start fetching for available
+        messages. Once a preconfigured batch size is reached, it gives back the list of
+        items to the caller which then can acknowledge this way remove from the Stream
+        the message. The consumer implementation returns after the preconfigured
+        maximum weight time, even if the lot is not full. This way the items won't wait
+        long in the stream.
+        :param batch_size: as the name suggests this consumer implementation will
+                    collect the number of items defined as batch size. Can be set to 1
+                    to process items one by one
+        :param  poll_time_ms: poll time of one iteration
+        :param max_wait_time_ms: Approximate maximum time to wait for the batch to be
+                                  complete. Call returns if time pass even if the batch
+                                  is not full. 0 means: no return
         """
         super().__init__(
             redis_conn=redis_conn, stream=stream, consumer_group=consumer_group

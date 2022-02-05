@@ -19,6 +19,12 @@ class Scaler(BaseRedisClass):
         stream: str,
         consumer_group: str,
     ):
+        """
+        By checking the number of messages waiting to be assigned and the number of
+        pending items, utilization ratio can be calculated. Once this rate crosses a
+        lower (scale in) or higher (scale out) the code will give a suggestion of
+        scale in / out.
+        """
         super().__init__(
             redis_conn=redis_conn, stream=stream, consumer_group=consumer_group
         )

@@ -26,10 +26,10 @@ class ConsumerMetrics:
 
     def __repr__(self):
         return (
-            f"ConsumerMetrics(consumer_id={self.consumer_id}, "
-            f"pending_items={self.pending_items}, "
-            f"idle_time={self.idle_time}, "
-            f"status={self.status})"
+            f'ConsumerMetrics(consumer_id="{self.consumer_id}", '
+            f'pending_items={self.pending_items}", '
+            f'idle_time={self.idle_time}", '
+            f'status="{self.status}")'
         )
 
     def __str__(self):
@@ -50,9 +50,27 @@ class Monitor(ConsumerAndMonitor):
         stream: str,
         consumer_group: str,
         batch_size: int = 2,
-        min_wait_time_ms: int = 10,
+        min_wait_time_ms: int = 1000,
         idle_time_ms_warning_threshold: int = 30000,
     ):
+        """
+        Periodically check the activity of the consumers warns if they are idle  - not
+        fetching message from the Stream for longer than the preconfigured inactivity
+        threshold or have more assigned messages than the batch size. Automatic or
+        on-demand cleanup are also supported.
+        :param pending_items: alert if pending items of a consumer is bigger than this.
+                              If you make batch collection it is a good idea to set it
+                              equal to the batch size of consumers
+        :param min_wait_time_ms: if messages need to be assigned to other consumer
+                                 this parameter defines at least how old should they be
+                                 We don't want to assign too fresh messages as
+                                 they might being processed the time of re-assignment
+        :param idle_time: alert threshold in milliseconds between the current time and
+                          last time a consumer tried to fetch message from the stream.
+                          Should be bigger to max_wait_time_ms parameter of consumer as
+                          consumer need to collect messgages from the stream plus should
+                          process them
+        """
         super().__init__(
             redis_conn=redis_conn, stream=stream, consumer_group=consumer_group
         )

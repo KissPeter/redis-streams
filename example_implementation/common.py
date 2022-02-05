@@ -10,6 +10,5 @@ def get_random_wait_time(
 ) -> float:
     """
     Support ms grade wait
-    :return:
     """
     return random.randint(min_wait * 100, max_wait * 100) / 1000
