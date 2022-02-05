@@ -1,0 +1,58 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python application
+
+on:
+    push:
+        branches:
+            - '**'
+    pull_request:
+        branches: [ main ]
+
+jobs:
+    build:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ ubuntu-latest] # , macos-latest, windows-latest
+                python-version: [ '3.6', '3.7', '3.8', '3.9', '3.10', 'pypy-3.8' ]
+        steps:
+            -   uses: actions/checkout@v2
+            -   name: Set up Python
+                uses: actions/setup-python@v2
+                with:
+                    python-version: ${{ matrix.python-version }}
+            -   name: Display Python version
+                run: python --version
+            -   name: Install dependencies
+                run: |
+                    python -m pip install --upgrade pip
+                    pip install flake8 pytest
+                    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+                    if [ -f redis_streams_test/requirements_for_test.txt ]; then pip install -r redis_streams_test/requirements_for_test.txt; fi
+            -   name: Lint
+                run: |
+                    flake8 redis_streams/
+                    black redis_streams/
+                    mypy --install-types --non-interactive redis_streams/
+                    mypy --explicit-package-bases --namespace-packages redis_streams/
+                    vulture --min-confidence 100 redis_streams/
+            -   uses: actions/checkout@v2
+            -   uses: shogo82148/actions-setup-redis@v1
+                with:
+                    redis-version: 'latest'
+            -   run: redis-cli ping
+            -   name: Test
+                run: |
+                    pytest  -x --cov-report term --cov=redis_streams  --durations=10 --show-capture=stdout -vv -rP --random-order --html=pytest_report.html --self-contained-html redis_streams_test
+                    coverage html
+            -   uses: actions/upload-artifact@v2
+                with:
+                    name: Coverage-${{ matrix.python-version }}
+                    path: ./htmlcov
+            -   uses: actions/upload-artifact@v2
+                with:
+                    name: Pytest-Report-${{ matrix.python-version }}
+                    path: pytest_report.html
+
