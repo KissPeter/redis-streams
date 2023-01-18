@@ -1,4 +1,8 @@
+[![Pypi downloads](https://img.shields.io/pypi/dw/redis-streams)](https://pypistats.org/packages/redis-streams)
+
+
 # Redis-Streams 
+
 This package builds on [Redis Streams](https://redis.io/topics/streams-intro) and provides an easy to use interface for batch collection and processing. Simplifies the consumer group and consumers management.
 Designed for a highly available, scalable and distributed environment, it thus offers, in addition to the main functionality, monitoring and scaling capabilities. 
 
