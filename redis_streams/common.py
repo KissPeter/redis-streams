@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, List
 
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -40,7 +41,7 @@ class ConsumerAndMonitor(BaseRedisClass):
 
     def get_pending_items_of_consumer(
         self, item_count: int, consumer_id: str
-    ) -> list[dict[Any, Any]]:
+    ) -> List[Dict[Any, Any]]:
         """
         name: name of the stream.
         groupname: name of the consumer group.
