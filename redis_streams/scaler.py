@@ -53,9 +53,12 @@ class Scaler(BaseRedisClass):
         else:
             # xrange output, the len of the messages should be decreased by one as it
             # includes the last delivered
+            _messages = self.redis_conn.xrange(
+                name=self.stream, min=last_delivered, max=last_generated
+            )
             self.stream_lenght = max(
                 0,
-                len(self.redis_conn.xrange(name=self.stream, min=last_delivered, max=last_generated)) - 1,  # type: ignore[arg-type]
+                len(_messages) - 1,  # type: ignore[arg-type]
             )
         return self.stream_lenght, self.stream_pending
 
