@@ -76,7 +76,7 @@ setup_options = dict(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ],
-    python_requires=">=3.6, <4",
+    python_requires=">=3.7, <4",
     package_data={"redis_streams": ["*.py"]},
     exclude_package_data={"redis_streams_test": ["*"]},
 )
