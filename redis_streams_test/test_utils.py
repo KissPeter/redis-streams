@@ -1,9 +1,10 @@
 import logging
 import os
+import sys
 
 from redis_streams import PACKAGE
 
-STREAM = "test_stream"
+STREAM = f"test_stream_{sys.version_info.major}.{sys.version_info.minor}"
 GROUP = "test_group"
 TEST_DATASET = [{"test": "data1"}, {"test": "data2"}]
 
