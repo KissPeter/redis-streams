@@ -74,7 +74,9 @@ class Scaler(BaseRedisClass):
         if not all([self.stream_pending, self.stream_lenght]):
             self.collect_metrics()
         if self.stream_pending:
-            self.lenght_pending_rate = round(max(min(5 / 4 * 100, 100), 1), 4)
+            self.lenght_pending_rate = round(
+                max(min(self.stream_lenght / self.stream_pending * 100, 100), 1), 4
+            )
         else:
             # if no pending item, no scale
             self.lenght_pending_rate = 0

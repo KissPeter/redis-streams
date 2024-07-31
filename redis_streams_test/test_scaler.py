@@ -27,7 +27,7 @@ class TestMonitor(TestBase):
             scale_out_rate=60, scale_in_rate=20
         )
         # no scale as stream length = 0
-        _context = (f"rate: {rate}, suggestion: {suggestion},"
+        _context = (f"rate: {rate}, suggestion: {suggestion}, "
                     f"{scaler.consumers_of_group} consumers")
         assert suggestion == Scale.NOSCALE.value, _context
 
@@ -52,7 +52,7 @@ class TestMonitor(TestBase):
             scale_out_rate=50, scale_in_rate=20
         )
         # 1 len, 2 pending should give 50
-        _context = (f"rate: {rate}, suggestion: {suggestion},"
+        _context = (f"rate: {rate}, suggestion: {suggestion}, "
                     f"{scaler.consumers_of_group} consumers")
         assert rate == 50, _context
         assert suggestion == Scale.OUT.value, _context
@@ -62,20 +62,23 @@ class TestMonitor(TestBase):
             redis_conn=self.redis_conn,
             stream=STREAM,
             consumer_group=GROUP,
-            batch_size=2,
+            batch_size=1, # During this test we need to use batch size 1 as XRANGE
+            # will include all items returned
             max_wait_time_ms=100,
             consumer_id=get_test_name(),
         )
-        returned_items = redis_consumer1.get_items()
-        Consumer(
+        returned_items1 = redis_consumer1.get_items()
+        redis_consumer2 = Consumer(
             redis_conn=self.redis_conn,
             stream=STREAM,
             consumer_group=GROUP,
             batch_size=2,
             max_wait_time_ms=100,
             consumer_id=get_test_name(suffix="2"),
-        ).get_items()
-        assert len(returned_items) == 2, returned_items
+        )
+        returned_items2 = redis_consumer2.get_items()
+        assert len(returned_items1) == 2, returned_items1
+        assert len(returned_items2) == 0, returned_items2
         # add extra, non-consumed item
         self.redis_conn.xadd(name=STREAM, fields={"some": "stuff"})
         scaler = Scaler(redis_conn=self.redis_conn, stream=STREAM, consumer_group=GROUP)
@@ -85,7 +88,7 @@ class TestMonitor(TestBase):
         rate, suggestion = scaler.get_scale_decision(
             scale_out_rate=80, scale_in_rate=75
         )
-        _context = (f"rate: {rate}, suggestion: {suggestion},"
+        _context = (f"rate: {rate}, suggestion: {suggestion}, "
                     f"{scaler.consumers_of_group} consumers")
         assert rate == 50, _context
         # As 50 < 75, scale in
