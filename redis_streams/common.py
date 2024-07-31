@@ -12,7 +12,7 @@ class BaseRedisClass:
         self.redis_conn = redis_conn
         self.stream = stream
         self.consumer_group = consumer_group
-        self.logger = logging.getLogger(PACKAGE)
+        self.logger = logging.getLogger(f"{PACKAGE}_{self.__class__.__name__}")
         self.prepare_redis()
 
     def _create_consumer_group(self) -> None:
