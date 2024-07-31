@@ -29,7 +29,7 @@ class MsgId(Enum):
     """
 
     never_delivered = ">"
-    already_deliverd = "0"
+    already_delivered = "0"
 
 
 class Consumer(ConsumerAndMonitor):
@@ -96,7 +96,7 @@ class Consumer(ConsumerAndMonitor):
                 requested_messages=max(1, self.batch_size - self.assigned_messages),
             )
         return self._get_messages_from_stream(
-            latest_or_new=MsgId.already_deliverd.value
+            latest_or_new=MsgId.already_delivered.value
         )
 
     def _get_new_items_to_consumer(self, requested_messages):
