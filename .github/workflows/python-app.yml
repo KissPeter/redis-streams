@@ -42,7 +42,7 @@ jobs:
             -   run: redis-cli ping
             -   name: Test
                 run: |
-                    pytest  -x --cov-report term --cov=redis_streams  --durations=10 --show-capture=stdout -vv -rP --random-order --html=pytest_report.html --self-contained-html redis_streams_test
+                    pytest --maxfail=5 --cov-report term --cov=redis_streams  --durations=10 --show-capture=stdout -vv -rP --random-order --html=pytest_report.html --self-contained-html redis_streams_test
                     coverage html
             -   uses: actions/upload-artifact@v2
                 with:

@@ -27,7 +27,9 @@ class TestMonitor(TestBase):
             scale_out_rate=60, scale_in_rate=20
         )
         # no scale as stream length = 0
-        assert suggestion == Scale.NOSCALE.value, suggestion
+        _context = (f"rate: {rate}, suggestion: {suggestion},"
+                    f"{scaler.consumers_of_group} consumers")
+        assert suggestion == Scale.NOSCALE.value, _context
 
     def test_scaler_scale_out(self):
         redis_consumer = Consumer(
@@ -50,8 +52,10 @@ class TestMonitor(TestBase):
             scale_out_rate=50, scale_in_rate=20
         )
         # 1 len, 2 pending should give 50
-        assert rate == 50, rate
-        assert suggestion == Scale.OUT.value, suggestion
+        _context = (f"rate: {rate}, suggestion: {suggestion},"
+                    f"{scaler.consumers_of_group} consumers")
+        assert rate == 50, _context
+        assert suggestion == Scale.OUT.value, _context
 
     def test_scaler_scale_in(self):
         redis_consumer1 = Consumer(
@@ -81,10 +85,11 @@ class TestMonitor(TestBase):
         rate, suggestion = scaler.get_scale_decision(
             scale_out_rate=80, scale_in_rate=75
         )
-        assert rate == 50, rate
+        _context = (f"rate: {rate}, suggestion: {suggestion},"
+                    f"{scaler.consumers_of_group} consumers")
+        assert rate == 50, _context
         # As 50 < 75, scale in
-        assert suggestion == Scale.IN.value, (f"rate: {rate}, suggestion: {suggestion}"
-                                              f",{scaler.consumers_of_group} consumers")
+        assert suggestion == Scale.IN.value, _context
 
     def test_scaler_multiple_consumer_groups(self):
         scaler = Scaler(redis_conn=self.redis_conn, stream=STREAM, consumer_group=GROUP)
