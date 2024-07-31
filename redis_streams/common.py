@@ -1,8 +1,8 @@
 import logging
-from typing import List
 
 from redis import Redis
 from redis.exceptions import ResponseError
+from typing_extensions import Any
 
 from redis_streams import PACKAGE
 
@@ -40,7 +40,7 @@ class ConsumerAndMonitor(BaseRedisClass):
 
     def get_pending_items_of_consumer(
         self, item_count: int, consumer_id: str
-    ) -> List[dict]:
+    ) -> list[dict[Any, Any]]:
         """
         name: name of the stream.
         groupname: name of the consumer group.
@@ -62,7 +62,7 @@ class ConsumerAndMonitor(BaseRedisClass):
             max="+",
             count=item_count,
             consumername=consumer_id,
-        )
+        )  # type: ignore[return-value]
 
     def remove_consumer(self, consumer_to_delete: str) -> int:
         """
@@ -73,4 +73,4 @@ class ConsumerAndMonitor(BaseRedisClass):
             name=self.stream,
             groupname=self.consumer_group,
             consumername=consumer_to_delete,
-        )
+        )  # type: ignore[return-value]

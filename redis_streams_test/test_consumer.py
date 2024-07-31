@@ -2,8 +2,7 @@ import datetime
 
 from redis_streams.consumer import Consumer
 from redis_streams_test.base import TestBase
-from redis_streams_test.test_utils import STREAM, GROUP, \
-    get_test_name, TEST_DATASET
+from redis_streams_test.test_utils import STREAM, GROUP, get_test_name, TEST_DATASET
 
 
 class TestConsumerE2E(TestBase):
@@ -15,7 +14,7 @@ class TestConsumerE2E(TestBase):
             consumer_group=GROUP,
             poll_time_ms=500,
             batch_size=len(TEST_DATASET),
-            consumer_id=get_test_name()
+            consumer_id=get_test_name(),
         )
         repr(redis_consumer)
         messages = redis_consumer.get_items()
@@ -34,7 +33,7 @@ class TestConsumerE2E(TestBase):
             max_wait_time_ms=max_wait_time,
             poll_time_ms=int(max_wait_time / 10),
             batch_size=len(TEST_DATASET) + 1,
-            consumer_id=get_test_name()
+            consumer_id=get_test_name(),
         )
         t1 = datetime.datetime.now()
         messages = redis_consumer.get_items()
