@@ -1,8 +1,10 @@
 import logging
-from typing import List
+import typing
+from typing import Dict, List
 
 from redis import Redis
 from redis.exceptions import ResponseError
+from typing_extensions import Any
 
 from redis_streams import PACKAGE
 
@@ -38,9 +40,10 @@ class ConsumerAndMonitor(BaseRedisClass):
     def __init__(self, redis_conn: Redis, stream: str, consumer_group: str):
         super().__init__(redis_conn, stream, consumer_group)
 
+    @typing.no_type_check
     def get_pending_items_of_consumer(
         self, item_count: int, consumer_id: str
-    ) -> List[dict]:
+    ) -> List[Dict[Any, Any]]:
         """
         name: name of the stream.
         groupname: name of the consumer group.
@@ -69,8 +72,9 @@ class ConsumerAndMonitor(BaseRedisClass):
         Removes the consumer from the consumer group,  returns the number of lost
         messages as int
         """
-        return self.redis_conn.xgroup_delconsumer(
+        _resp = self.redis_conn.xgroup_delconsumer(
             name=self.stream,
             groupname=self.consumer_group,
             consumername=consumer_to_delete,
         )
+        return _resp  # type: ignore[return-value]

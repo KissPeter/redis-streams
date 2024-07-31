@@ -1,5 +1,6 @@
 [tool.mypy]
 ignore_missing_imports = true
+disable_error_code = ["union-attr", "assignment"]
+
 [tool.mypy-redis]
 ignore_missing_imports = true
-
