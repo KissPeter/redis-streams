@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import Tuple
-
 from redis import Redis
 
 from redis_streams.common import BaseRedisClass
@@ -53,14 +52,12 @@ class Scaler(BaseRedisClass):
         else:
             # xrange output, the len of the messages should be decreased by one as it
             # includes the last delivered
+            _messages = self.redis_conn.xrange(
+                name=self.stream, min=last_delivered, max=last_generated
+            )
             self.stream_lenght = max(
                 0,
-                len(
-                    self.redis_conn.xrange(
-                        name=self.stream, min=last_delivered, max=last_generated
-                    )
-                )
-                - 1,
+                len(_messages) - 1,  # type: ignore[arg-type]
             )
         return self.stream_lenght, self.stream_pending
 
@@ -99,12 +96,14 @@ class Scaler(BaseRedisClass):
         return scale
 
     def get_scale_decision(
-        self, scale_out_rate=50, scale_in_rate=10
+        self,
+        scale_out_rate: int = 50,
+        scale_in_rate: int = 10,
     ) -> Tuple[int, str]:
         """
         Rates are counted by stream length / number of pending items
-        :param scale_out_rate: treshold rate of scale out in percent
-        :param scale_in_rate:  treshold rate of scale in in percent
+        :param scale_out_rate: threshold rate of scale out in percent
+        :param scale_in_rate:  threshold rate of scale inpercent
         :return: rate, suggestion
         """
         self._validate_scaling_params(

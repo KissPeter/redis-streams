@@ -1,18 +1,19 @@
 import logging
 import os
+import sys
 
 from redis_streams import PACKAGE
 
-STREAM = "test_stream"
+STREAM = f"test_stream_{sys.version_info.major}.{sys.version_info.minor}"
 GROUP = "test_group"
 TEST_DATASET = [{"test": "data1"}, {"test": "data2"}]
 
 
-def get_test_name(suffix=''):
+def get_test_name(suffix=""):
     _, _, test_name = os.getenv("PYTEST_CURRENT_TEST").split("::", 2)
-    if ' ' in test_name:
+    if " " in test_name:
         # remove ' (call)' from test name
-        test_name, _ = test_name.split(' ', 1)
+        test_name, _ = test_name.split(" ", 1)
     return f"{test_name}{suffix}"
 
 
@@ -29,4 +30,3 @@ def set_logger(level=logging.DEBUG):
     stream.setFormatter(formatter)
     logger.addHandler(stream)
     return logger
-

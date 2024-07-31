@@ -2,6 +2,7 @@ import json
 import sys
 from collections import defaultdict
 from enum import Enum
+from typing import Union, Awaitable, Any
 
 from redis import Redis
 from tabulate import tabulate
@@ -127,7 +128,7 @@ class Monitor(ConsumerAndMonitor):
 
     def assign_items_to_active_consumer(
         self, items: list, group: str, consumer_to_assign: str
-    ) -> int:
+    ) -> Union[Awaitable[Any], int]:
         return self.redis_conn.xclaim(
             name=self.stream,
             groupname=group,
@@ -137,7 +138,6 @@ class Monitor(ConsumerAndMonitor):
         )
 
     def collect_monitoring_data(self, auto_cleanup=True) -> None:
-
         self.collected_consumers_data = []
         self.unhealty_consumers = defaultdict(lambda: {})
         self.consumer_to_assign = ""

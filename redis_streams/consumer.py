@@ -142,7 +142,7 @@ class Consumer(ConsumerAndMonitor):
         try:
             items = self.redis_conn.xreadgroup(
                 groupname=self.consumer_group,
-                consumername=self.consumer_id,
+                consumername=self.consumer_id,  # type: ignore[arg-type]
                 count=requested_messages,
                 streams={self.stream: latest_or_new},
                 block=wait_time if wait_time else self.poll_time_ms,

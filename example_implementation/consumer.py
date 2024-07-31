@@ -13,7 +13,7 @@ def process_message(item: RedisMsg):
     """
     _ = item.content
     # mimic processing
-    sleep(get_random_wait_time()/10)
+    sleep(get_random_wait_time() / 10)
 
 
 if __name__ == "__main__":

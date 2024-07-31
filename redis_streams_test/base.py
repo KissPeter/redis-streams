@@ -11,7 +11,7 @@ class TestBase:
     @pytest.fixture(autouse=True)
     def prepare_redis(self):
         if self.redis_conn.xlen(name=STREAM):
-            self.logger.info(f'Trim {STREAM}')
+            self.logger.info(f"Trim {STREAM}")
             self.redis_conn.xtrim(STREAM, maxlen=0)
         for test_data in TEST_DATASET:
             self.logger.debug(f"Add  test data: {test_data}")

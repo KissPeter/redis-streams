@@ -20,15 +20,15 @@ def get_readme():
     with open("README.md", "r") as f:
         skip_lines = True
         for line in f.read().splitlines():
-            if line.startswith('# Redis-Streams'):
+            if line.startswith("# Redis-Streams"):
                 skip_lines = False
-            if line.startswith('### Runnel'):
+            if line.startswith("### Runnel"):
                 skip_lines = True
             if skip_lines:
                 continue
             else:
                 readme.append(line)
-    return '\n'.join(readme)
+    return "\n".join(readme)
 
 
 def get_requirements():
@@ -37,19 +37,19 @@ def get_requirements():
         for line in f.read().splitlines():
             if not line.startswith("#") and not line.startswith("--"):
                 requirements.append(line)
-    return '\n'.join(requirements)
+    return "\n".join(requirements)
 
 
 setup_options = dict(
-    name='redis-streams',
+    name="redis-streams",
     version=__version__,
     description="Redis Streams client implementation for high availability usage "
-                "including consumer, monitor and scaler implementation",
+    "including consumer, monitor and scaler implementation",
     long_description=get_readme(),
     long_description_content_type="text/markdown",
-    author='Peter Kiss',
-    author_email='peter.kiss@linuxadm.hu',
-    url='https://github.com/KissPeter/redis-streams/',
+    author="Peter Kiss",
+    author_email="peter.kiss@linuxadm.hu",
+    url="https://github.com/KissPeter/redis-streams/",
     project_urls={
         "Documentation": "https://github.com/KissPeter/redis-streams",
         "Changes": "https://github.com/KissPeter/redis-streams//releases",
@@ -61,24 +61,24 @@ setup_options = dict(
     install_requires=get_requirements(),
     license="GNU General Public License v3.0",
     classifiers=[  # https://pypi.org/classifiers/
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'Topic :: Communications',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: System :: Distributed Computing',
-        'Natural Language :: English',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12'
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Topic :: Communications",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: System :: Distributed Computing",
+        "Natural Language :: English",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
-    python_requires='>=3.6, <4',
-    package_data={"redis_streams": ['*.py']},
-    exclude_package_data={"redis_streams_test": ["*"]}
+    python_requires=">=3.6, <4",
+    package_data={"redis_streams": ["*.py"]},
+    exclude_package_data={"redis_streams_test": ["*"]},
 )
 
 setup(**setup_options)
