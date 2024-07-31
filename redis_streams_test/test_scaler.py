@@ -58,33 +58,37 @@ class TestMonitor(TestBase):
         assert suggestion == Scale.OUT.value, _context
 
     def test_scaler_scale_in(self):
+        redis_consumer1_batch_size = 1
+
         redis_consumer1 = Consumer(
             redis_conn=self.redis_conn,
             stream=STREAM,
             consumer_group=GROUP,
-            batch_size=1, # During this test we need to use batch size 1 as XRANGE
+            batch_size=redis_consumer1_batch_size, # During this test we need to use batch size 1 as XRANGE
             # will include all items returned
             max_wait_time_ms=100,
             consumer_id=get_test_name(),
         )
         returned_items1 = redis_consumer1.get_items()
+        redis_consumer2_batch_size = 1
         redis_consumer2 = Consumer(
             redis_conn=self.redis_conn,
             stream=STREAM,
             consumer_group=GROUP,
-            batch_size=2,
+            batch_size=redis_consumer2_batch_size,
             max_wait_time_ms=100,
             consumer_id=get_test_name(suffix="2"),
         )
         returned_items2 = redis_consumer2.get_items()
-        assert len(returned_items1) == 2, returned_items1
-        assert len(returned_items2) == 0, returned_items2
+        assert len(returned_items1) == redis_consumer1_batch_size, returned_items1
+        assert len(returned_items2) == redis_consumer2_batch_size, returned_items2
         # add extra, non-consumed item
         self.redis_conn.xadd(name=STREAM, fields={"some": "stuff"})
         scaler = Scaler(redis_conn=self.redis_conn, stream=STREAM, consumer_group=GROUP)
         stream_lenght, stream_pending = scaler.collect_metrics()
         assert stream_lenght == 1, stream_lenght
-        assert stream_pending == 2, stream_pending
+        assert stream_pending == (redis_consumer1_batch_size +
+                                  redis_consumer2_batch_size)
         rate, suggestion = scaler.get_scale_decision(
             scale_out_rate=80, scale_in_rate=75
         )
