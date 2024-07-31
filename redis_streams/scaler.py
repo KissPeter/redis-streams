@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import Tuple, Union
-
+from typing import Tuple
 from redis import Redis
 
 from redis_streams.common import BaseRedisClass

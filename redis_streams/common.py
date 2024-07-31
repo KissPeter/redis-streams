@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Union, Awaitable
+from typing import Dict, List
 
 from redis import Redis
 from redis.exceptions import ResponseError
