@@ -1,4 +1,5 @@
 import logging
+import typing
 from typing import Dict, List
 
 from redis import Redis
@@ -39,6 +40,7 @@ class ConsumerAndMonitor(BaseRedisClass):
     def __init__(self, redis_conn: Redis, stream: str, consumer_group: str):
         super().__init__(redis_conn, stream, consumer_group)
 
+    @typing.no_type_check
     def get_pending_items_of_consumer(
         self, item_count: int, consumer_id: str
     ) -> List[Dict[Any, Any]]:
@@ -63,7 +65,7 @@ class ConsumerAndMonitor(BaseRedisClass):
             max="+",
             count=item_count,
             consumername=consumer_id,
-        )  # type: ignore[return-value]
+        )
 
     def remove_consumer(self, consumer_to_delete: str) -> int:
         """
