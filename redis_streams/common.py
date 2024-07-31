@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List
+from typing import Dict, List, Union, Awaitable
 
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -70,8 +70,9 @@ class ConsumerAndMonitor(BaseRedisClass):
         Removes the consumer from the consumer group,  returns the number of lost
         messages as int
         """
-        return self.redis_conn.xgroup_delconsumer(
+        _resp = self.redis_conn.xgroup_delconsumer(
             name=self.stream,
             groupname=self.consumer_group,
             consumername=consumer_to_delete,
-        )  # type: ignore[return-value]
+        )
+        return _resp  # type: ignore[return-value]

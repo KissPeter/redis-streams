@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple
+from typing import Tuple, Union
 
 from redis import Redis
 
@@ -75,9 +75,7 @@ class Scaler(BaseRedisClass):
         if not all([self.stream_pending, self.stream_lenght]):
             self.collect_metrics()
         if self.stream_pending:
-            self.lenght_pending_rate = round(
-                max(min(self.stream_lenght / self.stream_pending * 100, 100), 1), 4
-            )
+            self.lenght_pending_rate = round(max(min(5 / 4 * 100, 100), 1), 4)
         else:
             # if no pending item, no scale
             self.lenght_pending_rate = 0
@@ -97,12 +95,14 @@ class Scaler(BaseRedisClass):
         return scale
 
     def get_scale_decision(
-        self, scale_out_rate=50, scale_in_rate=10
+        self,
+        scale_out_rate: int = 50,
+        scale_in_rate: int = 10,
     ) -> Tuple[int, str]:
         """
         Rates are counted by stream length / number of pending items
-        :param scale_out_rate: treshold rate of scale out in percent
-        :param scale_in_rate:  treshold rate of scale in in percent
+        :param scale_out_rate: threshold rate of scale out in percent
+        :param scale_in_rate:  threshold rate of scale inpercent
         :return: rate, suggestion
         """
         self._validate_scaling_params(

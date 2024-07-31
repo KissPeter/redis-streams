@@ -81,7 +81,10 @@ class TestMonitor(TestBase):
         rate, suggestion = scaler.get_scale_decision(
             scale_out_rate=80, scale_in_rate=75
         )
-        assert suggestion == Scale.IN.value, f"rate: {rate}, suggestion: {suggestion}"
+        assert rate == 50, rate
+        # As 50 < 75, scale in
+        assert suggestion == Scale.IN.value, (f"rate: {rate}, suggestion: {suggestion}"
+                                              f",{scaler.consumers_of_group} consumers")
 
     def test_scaler_multiple_consumer_groups(self):
         scaler = Scaler(redis_conn=self.redis_conn, stream=STREAM, consumer_group=GROUP)
