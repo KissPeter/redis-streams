@@ -1,6 +1,7 @@
 import os
 import threading
-from datetime import datetime, timedelta
+import warnings
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import List, Union
 
@@ -67,12 +68,12 @@ class Consumer(ConsumerAndMonitor):
         self.batch_size = batch_size
         self.poll_time_ms = poll_time_ms
         self.max_wait_time_ms = max_wait_time_ms
-        self.hard_stop_time = datetime.utcnow()
+        self.hard_stop_time = datetime.now(UTC)
         self.cleanup_on_exit = cleanup_on_exit
         self._set_hard_stop_time()
 
     def _wait_for_more_messages(self):
-        _now = datetime.utcnow()
+        _now = datetime.now(UTC)
         date_constraint = _now <= self.hard_stop_time
         message_number_constraint = self.assigned_messages < self.batch_size
         self.logger.debug(
@@ -84,7 +85,7 @@ class Consumer(ConsumerAndMonitor):
         return all([date_constraint, message_number_constraint])
 
     def _set_hard_stop_time(self):
-        self.hard_stop_time = datetime.utcnow() + timedelta(
+        self.hard_stop_time = datetime.now(UTC) + timedelta(
             microseconds=self.max_wait_time_ms * 1000
         )
 
@@ -176,19 +177,34 @@ class Consumer(ConsumerAndMonitor):
             msgs.append(RedisMsg(msgid=item[0], content=item[1]))
         return msgs
 
-    def remove_item_from_stream(self, item_id: str):
+    def remove_item_from_consumer_group(self, item_id: str):
         """
-        The data in the pending entries lists of your consumers will remain
-        there until App A and App B acknowledge to Redis self.streams that they
-        have successfully consumed the data.
-        XACK myself.stream mygroup 1526569411111-0 1526569411112-0
-        Acknowledges the successful processing of one or more messages.
-        name: name of the self.stream.
-        groupname: name of the consumer group.
-        *ids: message ids to acknowlege.
+        Acknowledge a message so it is removed from the consumer group's
+        pending entries list (PEL).
+
+        Note: this does **not** delete the message from the stream itself.
+        Use ``redis_conn.xdel(stream, item_id)`` if you also want to remove
+        the message from the stream.
+
         :param item_id: id to acknowledge
         """
         self.redis_conn.xack(self.stream, self.consumer_group, item_id)
+
+    def remove_item_from_stream(self, item_id: str):
+        """
+        .. deprecated::
+            Use :meth:`remove_item_from_consumer_group` instead.
+            This method only acknowledges the message (removes it from the
+            consumer group's PEL); it does **not** delete it from the stream.
+        """
+        warnings.warn(
+            "remove_item_from_stream() is misleading: it only acknowledges "
+            "the message (XACK), it does not delete it from the stream. "
+            "Use remove_item_from_consumer_group() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.remove_item_from_consumer_group(item_id)
 
     def __repr__(self):
         return (

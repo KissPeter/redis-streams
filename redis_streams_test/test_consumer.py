@@ -1,4 +1,5 @@
 import datetime
+import warnings
 
 from redis_streams.consumer import Consumer
 from redis_streams_test.base import TestBase
@@ -22,7 +23,7 @@ class TestConsumerE2E(TestBase):
         for message in messages:
             self.logger.debug(message)
             assert message.content in TEST_DATASET
-            redis_consumer.remove_item_from_stream(item_id=message.msgid)
+            redis_consumer.remove_item_from_consumer_group(item_id=message.msgid)
 
     def test_end_to_end_return_before_full_batch(self):
         max_wait_time = 50
@@ -40,3 +41,22 @@ class TestConsumerE2E(TestBase):
         timediff = datetime.datetime.now() - t1
         assert timediff.total_seconds() * 1000 >= max_wait_time
         assert len(messages) == len(TEST_DATASET)
+
+    def test_remove_item_from_stream_emits_deprecation_warning(self):
+        redis_consumer = Consumer(
+            redis_conn=self.redis_conn,
+            stream=STREAM,
+            consumer_group=GROUP,
+            poll_time_ms=50,
+            batch_size=1,
+            consumer_id=get_test_name(),
+        )
+        messages = redis_consumer.get_items()
+        assert len(messages) == 1
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            redis_consumer.remove_item_from_stream(item_id=messages[0].msgid)
+        assert len(caught) == 1
+        assert issubclass(caught[0].category, DeprecationWarning)
+        assert "remove_item_from_consumer_group" in str(caught[0].message)
+
