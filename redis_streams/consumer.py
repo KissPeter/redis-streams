@@ -94,7 +94,7 @@ class Consumer(ConsumerAndMonitor):
         self.assigned_messages = self._get_no_of_messages_already_assigned()
         while self._wait_for_more_messages():
             _requested_messages = max(1, self.batch_size - self.assigned_messages)
-            print(f"Requested messages: {_requested_messages}")
+            self.logger.debug("Requested messages: %s", _requested_messages)
             self.assigned_messages += self._get_new_items_to_consumer(
                 requested_messages=_requested_messages
             )
