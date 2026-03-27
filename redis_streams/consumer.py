@@ -93,10 +93,10 @@ class Consumer(ConsumerAndMonitor):
         self._set_hard_stop_time()
         self.assigned_messages = self._get_no_of_messages_already_assigned()
         while self._wait_for_more_messages():
-            _requested_messages  = max(1, self.batch_size - self.assigned_messages)
+            _requested_messages = max(1, self.batch_size - self.assigned_messages)
             print(f"Requested messages: {_requested_messages}")
             self.assigned_messages += self._get_new_items_to_consumer(
-                requested_messages= _requested_messages
+                requested_messages=_requested_messages
             )
         return self._get_messages_from_stream(
             latest_or_new=MsgId.already_delivered.value
@@ -217,4 +217,3 @@ class Consumer(ConsumerAndMonitor):
             f"max_wait_time_ms={self.max_wait_time_ms},"
             f"poll_time_ms={self.poll_time_ms})"
         )
-

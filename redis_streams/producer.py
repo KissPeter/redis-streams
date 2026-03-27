@@ -43,7 +43,7 @@ class Producer:
         """
         msg_id: str = self.redis_conn.xadd(  # type: ignore[assignment]
             name=self.stream,
-            fields=data,
+            fields=data,  # type: ignore[arg-type]
             maxlen=self.maxlen,
             approximate=self.maxlen is not None,
         )
@@ -57,4 +57,3 @@ class Producer:
             f"stream={self.stream},"
             f"maxlen={self.maxlen})"
         )
-

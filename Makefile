@@ -18,3 +18,10 @@ upload-test-pip-package:
 
 upload-pip-package:
 	python3 -m twine upload --repository pypi dist/* --verbose
+
+lint:
+	flake8 redis_streams/
+	black redis_streams/
+	mypy --install-types --non-interactive redis_streams/
+	mypy --explicit-package-bases --namespace-packages redis_streams/
+	vulture --min-confidence 100 redis_streams/

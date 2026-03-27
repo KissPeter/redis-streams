@@ -156,7 +156,9 @@ class Monitor(ConsumerAndMonitor):
                         pending=pending_items, idle=idle
                     )
                     if status != Status.OK.value:
-                        self.unhealthy_consumers[group_name][consumer_id] = pending_items
+                        self.unhealthy_consumers[group_name][
+                            consumer_id
+                        ] = pending_items
                     else:
                         if not consumer_to_assign_pending_items:
                             pending_items = consumer_to_assign_pending_items
