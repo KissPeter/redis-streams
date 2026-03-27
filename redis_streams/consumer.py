@@ -153,7 +153,9 @@ class Consumer(ConsumerAndMonitor):
             )
             self.logger.debug(f"Got {items}")
             return self._transform_redis_resp_to_objects(items)
-        except ResponseError:
+        except ResponseError as exc:
+            if "NOGROUP" in str(exc):
+                raise
             self.logger.warning(
                 f"Failed to get messages from {self.stream} from "
                 f"{self.consumer_group} as {self.consumer_id}",
