@@ -29,8 +29,13 @@ class BaseRedisClass:
                 name=self.stream, groupname=self.consumer_group, id="0-0", mkstream=True
             )
             self.logger.debug(f"{self.consumer_group} consumer group has been created")
-        except ResponseError:
-            self.logger.debug(f" {self.consumer_group} consumer group already exists")
+        except ResponseError as exc:
+            if "BUSYGROUP" in str(exc):
+                self.logger.debug(
+                    f"{self.consumer_group} consumer group already exists"
+                )
+            else:
+                raise
 
     def prepare_redis(self) -> None:
         self._create_consumer_group()

@@ -22,13 +22,23 @@ Overview of the components
 ![Redis Streams](https://tgrall.github.io/assets/images/redis-streams-101-img-1-2968c7ae8874c27aa176d161aa05a1d1.png "Redis Stream")
 *Image source: [tgrall.github.io](https://tgrall.github.io/blog/2019/09/02/getting-with-redis-streams-and-java)*
 
-### Provider
-As its name suggests, this component is responsible for providing the messages in the stream. Redis supports multiple providers.
+### Producer
+As its name suggests, this component is responsible for providing the messages in the stream. Redis supports multiple producers.
 #### Example code
 ```python
+from redis import Redis
+from redis_streams.producer import Producer
+
 redis_conn = Redis()
-sample_data = {"message": "stuff goes here"}
-redis_conn.xadd(name=STREAM, fields=sample_data)
+producer = Producer(redis_conn=redis_conn, stream=STREAM)
+
+# publish a single message
+msg_id = producer.add({"message": "stuff goes here"})
+print(f"Published {msg_id}")
+
+# optional: cap the stream length with approximate trimming
+producer_with_trim = Producer(redis_conn=redis_conn, stream=STREAM, maxlen=10000)
+producer_with_trim.add({"message": "older entries will be trimmed"})
 ```
 ### Consumer
 The consumer registers in the consumer group and start fetching for available messages. Once a preconfigured batch size is reached, it gives back the list of items to the caller which then can acknowledge this way remove from the Stream the message.
@@ -50,7 +60,7 @@ while True:
     for i, item in enumerate(messages):
         print(f"Pocessing {i}/{total_no_of_messages} message:{item}")
         process_message(item=item)
-        consumer.remove_item_from_stream(item_id=item.msgid)
+        consumer.remove_item_from_consumer_group(item_id=item.msgid)
 ```
 ### Monitor
 Periodically check the activity of the consumers warns if they are idle  - not fetching message from the Stream for longer than the preconfigured inactivity threshold or have more assigned messages than the batch size. Automatic or on-demand cleanup are also supported.

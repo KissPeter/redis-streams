@@ -4,13 +4,14 @@ from time import sleep
 from redis import Redis
 
 from common import STREAM, get_random_wait_time
+from redis_streams.producer import Producer
 
 if __name__ == "__main__":
-    redis_conn = Redis()
+    producer = Producer(redis_conn=Redis(), stream=STREAM)
     iteration = 0
     while True:
         sample_data = {"iteration": iteration, "message": "stuff goes here"}
-        print(f" {iteration}. Adding message to steam: {sample_data}")
-        redis_conn.xadd(name=STREAM, fields=sample_data)
+        msg_id = producer.add(sample_data)
+        print(f" {iteration}. Published message {msg_id}: {sample_data}")
         sleep(get_random_wait_time())
         iteration += 1

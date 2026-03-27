@@ -29,4 +29,4 @@ if __name__ == "__main__":
         for i, item in enumerate(messages):
             print(f"Pocessing {i+1}/{len(messages)} message:{item}")
             process_message(item=item)
-            consumer.remove_item_from_stream(item_id=item.msgid)
+            consumer.remove_item_from_consumer_group(item_id=item.msgid)
