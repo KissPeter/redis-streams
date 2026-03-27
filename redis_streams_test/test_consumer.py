@@ -3,7 +3,7 @@ import warnings
 
 from redis_streams.consumer import Consumer
 from redis_streams_test.base import TestBase
-from redis_streams_test.test_utils import STREAM, GROUP, get_test_name, TEST_DATASET
+from redis_streams_test.test_utils import GROUP, STREAM, TEST_DATASET, get_test_name
 
 
 class TestConsumerE2E(TestBase):

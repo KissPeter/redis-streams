@@ -5,7 +5,7 @@ Preparation instructions: https://packaging.python.org/tutorials/packaging-proje
 import os.path
 import re
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -59,6 +59,16 @@ setup_options = dict(
     scripts=[],
     packages=find_packages(exclude=["redis_streams_test"]),
     install_requires=get_requirements(),
+    extras_require={
+        "dev": [
+            "flake8",
+            "black",
+            "mypy",
+            "vulture",
+            "types-tabulate",
+            "types-requests",
+        ]
+    },
     license="GNU General Public License v3.0",
     classifiers=[  # https://pypi.org/classifiers/
         "Development Status :: 4 - Beta",
@@ -68,15 +78,12 @@ setup_options = dict(
         "Topic :: System :: Distributed Computing",
         "Natural Language :: English",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
     ],
-    python_requires=">=3.6, <4",
+    python_requires=">=3.11, <4",
     package_data={"redis_streams": ["*.py"]},
     exclude_package_data={"redis_streams_test": ["*"]},
 )

@@ -2,7 +2,7 @@ import json
 import sys
 from collections import defaultdict
 from enum import Enum
-from typing import Union, Awaitable, Any
+from typing import Any, Awaitable, Union
 
 from redis import Redis
 from tabulate import tabulate
@@ -80,7 +80,7 @@ class Monitor(ConsumerAndMonitor):
         self.idle_time_ms_warning_threshold = idle_time_ms_warning_threshold
         self.collected_consumers_data: list = []
         self.consumer_to_assign = ""
-        self.unhealty_consumers: dict = defaultdict(lambda: {})
+        self.unhealthy_consumers: dict = defaultdict(lambda: {})
 
     def _get_status_by_metrics(self, pending: int, idle: int) -> str:
         status = Status.OK.value
@@ -139,7 +139,7 @@ class Monitor(ConsumerAndMonitor):
 
     def collect_monitoring_data(self, auto_cleanup=True) -> None:
         self.collected_consumers_data = []
-        self.unhealty_consumers = defaultdict(lambda: {})
+        self.unhealthy_consumers = defaultdict(lambda: {})
         self.consumer_to_assign = ""
         consumer_to_assign_pending_items = 0
 
@@ -156,7 +156,9 @@ class Monitor(ConsumerAndMonitor):
                         pending=pending_items, idle=idle
                     )
                     if status != Status.OK.value:
-                        self.unhealty_consumers[group_name][consumer_id] = pending_items
+                        self.unhealthy_consumers[group_name][
+                            consumer_id
+                        ] = pending_items
                     else:
                         if not consumer_to_assign_pending_items:
                             pending_items = consumer_to_assign_pending_items
@@ -172,19 +174,19 @@ class Monitor(ConsumerAndMonitor):
                         )
                     )
         if auto_cleanup:
-            if self.consumer_to_assign and len(self.unhealty_consumers):
+            if self.consumer_to_assign and len(self.unhealthy_consumers):
                 self.cleanup()
             elif self.consumer_to_assign:
-                self.logger.debug("No cleanup, as no unhealty consumers")
+                self.logger.debug("No cleanup, as no unhealthy consumers")
             else:
-                self.logger.debug("No cleanup, as no healty consumer to assign")
+                self.logger.debug("No cleanup, as no healthy consumer to assign")
         else:
             self.logger.debug("Auto cleanup disabled")
 
     def cleanup(self):
         self.logger.debug("Cleaning up unhealthy consumers")
-        for group in self.unhealty_consumers.keys():
-            for consumer_id, pending_items in self.unhealty_consumers[group].items():
+        for group in self.unhealthy_consumers.keys():
+            for consumer_id, pending_items in self.unhealthy_consumers[group].items():
                 self.cleanup_unhealthy_consumer(
                     consumer_to_delete=consumer_id,
                     pending_count=pending_items,

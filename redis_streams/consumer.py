@@ -30,7 +30,7 @@ class MsgId(Enum):
     """
 
     never_delivered = ">"
-    already_deliverd = "0"
+    already_delivered = "0"
 
 
 class Consumer(ConsumerAndMonitor):
@@ -93,11 +93,13 @@ class Consumer(ConsumerAndMonitor):
         self._set_hard_stop_time()
         self.assigned_messages = self._get_no_of_messages_already_assigned()
         while self._wait_for_more_messages():
+            _requested_messages = max(1, self.batch_size - self.assigned_messages)
+            self.logger.debug("Requested messages: %s", _requested_messages)
             self.assigned_messages += self._get_new_items_to_consumer(
-                requested_messages=max(1, self.batch_size - self.assigned_messages),
+                requested_messages=_requested_messages
             )
         return self._get_messages_from_stream(
-            latest_or_new=MsgId.already_deliverd.value
+            latest_or_new=MsgId.already_delivered.value
         )
 
     def _get_new_items_to_consumer(self, requested_messages):
@@ -215,7 +217,3 @@ class Consumer(ConsumerAndMonitor):
             f"max_wait_time_ms={self.max_wait_time_ms},"
             f"poll_time_ms={self.poll_time_ms})"
         )
-
-    def __del__(self):
-        if self.cleanup_on_exit:
-            self.remove_consumer(self.consumer_id)

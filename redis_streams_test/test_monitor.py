@@ -1,10 +1,10 @@
 import time
+from io import StringIO
 
+from redis_streams.consumer import Consumer
 from redis_streams.monitor import Monitor
 from redis_streams_test.base import TestBase
-from redis_streams.consumer import Consumer
-from redis_streams_test.test_utils import STREAM, GROUP, get_test_name
-from io import StringIO
+from redis_streams_test.test_utils import GROUP, STREAM, get_test_name
 
 
 class TestMonitor(TestBase):

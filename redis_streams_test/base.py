@@ -1,7 +1,7 @@
 import pytest
 from redis import Redis
 
-from redis_streams_test.test_utils import STREAM, set_logger, TEST_DATASET
+from redis_streams_test.test_utils import STREAM, TEST_DATASET, set_logger
 
 
 class TestBase:

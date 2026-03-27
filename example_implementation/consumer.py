@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from time import sleep
 
+from common import GROUP, STREAM, get_random_wait_time
 from redis import Redis
 
-from common import STREAM, GROUP, get_random_wait_time
 from redis_streams.consumer import Consumer, RedisMsg
 
 
@@ -18,7 +18,7 @@ def process_message(item: RedisMsg):
 
 if __name__ == "__main__":
     consumer = Consumer(
-        redis_conn=Redis(decode_responses=True),
+        redis_conn=Redis(decode_responses=True,ssl=True,ssl_cert_reqs=None, username="default",password="Acj-AAIncDE3NDYwYWEzNTUwNjk0YmI3ODAxM2VhMDc2MTA4NzczM3AxNTE0NTQ", host="honest-hedgehog-51454.upstash.io"),
         stream=STREAM,
         consumer_group=GROUP,
         batch_size=10,

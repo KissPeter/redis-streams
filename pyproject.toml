@@ -4,3 +4,7 @@ disable_error_code = ["union-attr", "assignment"]
 
 [tool.mypy-redis]
 ignore_missing_imports = true
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
