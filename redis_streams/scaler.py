@@ -48,6 +48,8 @@ class Scaler(BaseRedisClass):
         last_generated = stream_info.get("last-generated-id")
         if not last_delivered:
             self.stream_lenght = self.redis_conn.xlen(name=self.stream)
+        elif last_generated is None:
+            self.stream_lenght = self.redis_conn.xlen(name=self.stream)
         elif last_generated == last_delivered:
             self.stream_lenght = 0
         else:
@@ -56,9 +58,11 @@ class Scaler(BaseRedisClass):
             _messages = self.redis_conn.xrange(
                 name=self.stream, min=last_delivered, max=last_generated
             )
+            if not isinstance(_messages, list):
+                _messages = []
             self.stream_lenght = max(
                 0,
-                len(_messages) - 1,  # type: ignore[arg-type]
+                len(_messages) - 1,
             )
         return self.stream_lenght, self.stream_pending
 

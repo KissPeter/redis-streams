@@ -2,7 +2,7 @@ import json
 import sys
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Awaitable, Union
+from typing import Any
 
 from redis import Redis
 from tabulate import tabulate
@@ -167,10 +167,16 @@ class Monitor(ConsumerAndMonitor):
                 start_id=start_id,
                 count=self.batch_size,
             )
+            if not isinstance(response, (list, tuple)) or len(response) < 2:
+                break
             next_cursor, claimed_messages = response[0], response[1]
+            if not isinstance(claimed_messages, list):
+                claimed_messages = []
             total_claimed += len(claimed_messages)
             if len(response) > 2:  # Redis >= 7.0.0
-                total_lost += len(response[2])
+                deleted_messages = response[2]
+                if isinstance(deleted_messages, list):
+                    total_lost += len(deleted_messages)
             if not next_cursor or str(next_cursor) == "0-0":
                 break
             start_id = next_cursor
@@ -183,7 +189,7 @@ class Monitor(ConsumerAndMonitor):
 
     def assign_items_to_active_consumer(
         self, items: list, group: str, consumer_to_assign: str
-    ) -> Union[Awaitable[Any], int]:
+    ) -> Any:
         return self.redis_conn.xclaim(
             name=self.stream,
             groupname=group,
@@ -200,13 +206,16 @@ class Monitor(ConsumerAndMonitor):
 
         for group in self.redis_conn.xinfo_groups(self.stream):
             group_name = group.get("name")
-            if group.get("consumers") > 0:
+            if not group_name:
+                continue
+            consumers_count = int(group.get("consumers") or 0)
+            if consumers_count > 0:
                 for consumer in self.redis_conn.xinfo_consumers(
                     name=self.stream, groupname=group_name
                 ):
-                    consumer_id = consumer.get("name")
-                    pending_items = consumer.get("pending", 0)
-                    idle = consumer.get("idle")
+                    consumer_id = str(consumer.get("name") or "")
+                    pending_items = int(consumer.get("pending") or 0)
+                    idle = int(consumer.get("idle") or 0)
                     status = self._get_status_by_metrics(
                         pending=pending_items, idle=idle
                     )
@@ -223,8 +232,8 @@ class Monitor(ConsumerAndMonitor):
                     self.collected_consumers_data.append(
                         ConsumerMetrics(
                             consumer_id=consumer_id,
-                            idle_time=consumer.get("idle"),
-                            pending_items=consumer.get("pending"),
+                            idle_time=idle,
+                            pending_items=pending_items,
                             status=status,
                         )
                     )
