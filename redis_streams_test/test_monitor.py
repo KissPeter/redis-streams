@@ -9,6 +9,7 @@ from redis_streams_test.test_utils import GROUP, STREAM, get_test_name
 
 class TestMonitor(TestBase):
 
+
     def test_monitor_to_many_pending_items(self):
         redis_consumer1 = Consumer(
             redis_conn=self.redis_conn,

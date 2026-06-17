@@ -98,7 +98,29 @@ class Monitor(ConsumerAndMonitor):
         2. assign items to an active consumer
         3. remove consumer
 
-        TODO: 2 and 3 can be done by XAUTOCLAIM if Redis supports
+        Steps 1 and 2 are done by a single XAUTOCLAIM call when the connected
+        Redis server supports it (>= 6.2.0), otherwise we fall back to the
+        XPENDING + XCLAIM combination.
+        """
+        if self.supports_xautoclaim():
+            self.reassign_items_with_xautoclaim(
+                consumer_to_assign=self.consumer_to_assign
+            )
+        else:
+            self.reassign_items_with_xclaim(
+                pending_count=pending_count, consumer_to_delete=consumer_to_delete
+            )
+        # 3
+        resp = self.remove_consumer(consumer_to_delete=consumer_to_delete)
+        if resp > 0:
+            self.logger.error(f"{resp} messages lost")
+
+    def reassign_items_with_xclaim(
+        self, pending_count: int, consumer_to_delete: str
+    ) -> None:
+        """
+        Fallback path for Redis < 6.2.0: query the pending items of the
+        consumer (XPENDING) and assign them to an active consumer (XCLAIM).
         """
         # 1
         messages_to_cleanup = []
@@ -121,10 +143,43 @@ class Monitor(ConsumerAndMonitor):
                 f"Moved {len(messages_to_cleanup)} items from "
                 f"{consumer_to_delete} to {self.consumer_to_assign}"
             )
-        # 3
-        resp = self.remove_consumer(consumer_to_delete=consumer_to_delete)
-        if resp > 0:
-            self.logger.error(f"{resp} messages lost")
+
+    def reassign_items_with_xautoclaim(self, consumer_to_assign: str) -> None:
+        """
+        Transfer ownership of pending entries that are idle for at least
+        ``min_wait_time_ms`` to an active consumer using XAUTOCLAIM. The command
+        works in a SCAN-like fashion, so we iterate over the returned cursor
+        until all matching entries have been claimed.
+
+        From Redis 7.0.0 the reply contains a third element listing the entries
+        that were deleted from the PEL (because they no longer exist in the
+        stream); those messages are considered lost and reported as errors.
+        """
+        start_id = "0-0"
+        total_claimed = 0
+        total_lost = 0
+        while True:
+            response = self.redis_conn.xautoclaim(
+                name=self.stream,
+                groupname=self.consumer_group,
+                consumername=consumer_to_assign,
+                min_idle_time=self.min_wait_time_ms,
+                start_id=start_id,
+                count=self.batch_size,
+            )
+            next_cursor, claimed_messages = response[0], response[1]
+            total_claimed += len(claimed_messages)
+            if len(response) > 2:  # Redis >= 7.0.0
+                total_lost += len(response[2])
+            if not next_cursor or str(next_cursor) == "0-0":
+                break
+            start_id = next_cursor
+        if total_claimed:
+            self.logger.debug(
+                f"Moved {total_claimed} items to {consumer_to_assign} via XAUTOCLAIM"
+            )
+        if total_lost:
+            self.logger.error(f"{total_lost} messages lost")
 
     def assign_items_to_active_consumer(
         self, items: list, group: str, consumer_to_assign: str
