@@ -104,7 +104,8 @@ class Monitor(ConsumerAndMonitor):
         """
         if self.supports_xautoclaim():
             self.reassign_items_with_xautoclaim(
-                consumer_to_assign=self.consumer_to_assign
+                consumer_to_assign=self.consumer_to_assign,
+                consumer_to_delete=consumer_to_delete,
             )
         else:
             self.reassign_items_with_xclaim(
@@ -144,12 +145,21 @@ class Monitor(ConsumerAndMonitor):
                 f"{consumer_to_delete} to {self.consumer_to_assign}"
             )
 
-    def reassign_items_with_xautoclaim(self, consumer_to_assign: str) -> None:
+    def reassign_items_with_xautoclaim(
+        self, consumer_to_assign: str, consumer_to_delete: str
+    ) -> None:
         """
         Transfer ownership of pending entries that are idle for at least
         ``min_wait_time_ms`` to an active consumer using XAUTOCLAIM. The command
         works in a SCAN-like fashion, so we iterate over the returned cursor
         until all matching entries have been claimed.
+
+        Note: XAUTOCLAIM claims idle entries from the entire consumer group's PEL,
+        not just from a specific consumer. The consumer_to_delete parameter is
+        accepted for API consistency but XAUTOCLAIM cannot filter by source consumer.
+        This means it may claim messages from other consumers with idle messages,
+        which is typically acceptable during cleanup as it helps reassign all stale
+        work. For precise per-consumer cleanup, the XCLAIM fallback is used.
 
         From Redis 7.0.0 the reply contains a third element listing the entries
         that were deleted from the PEL (because they no longer exist in the
@@ -177,7 +187,7 @@ class Monitor(ConsumerAndMonitor):
                 deleted_messages = response[2]
                 if isinstance(deleted_messages, list):
                     total_lost += len(deleted_messages)
-            if not next_cursor or str(next_cursor) == "0-0":
+            if not next_cursor or next_cursor in (b"0-0", "0-0"):
                 break
             start_id = next_cursor
         if total_claimed:
