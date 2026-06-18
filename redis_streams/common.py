@@ -1,12 +1,17 @@
 import logging
 import typing
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from redis import Redis
 from redis.exceptions import ResponseError
 from typing_extensions import Any
 
 from redis_streams import PACKAGE
+
+# XAUTOCLAIM command was introduced in Redis 6.2.0. Starting with Redis 7.0.0
+# the reply additionally contains the list of entries that were deleted from
+# the PEL, which we rely on to report lost messages.
+XAUTOCLAIM_MIN_VERSION: Tuple[int, int, int] = (6, 2, 0)
 
 
 class BaseRedisClass:
@@ -15,7 +20,28 @@ class BaseRedisClass:
         self.stream = stream
         self.consumer_group = consumer_group
         self.logger = logging.getLogger(f"{PACKAGE}_{self.__class__.__name__}")
+        self._redis_version: Optional[Tuple[int, ...]] = None
         self.prepare_redis()
+
+    @typing.no_type_check
+    def get_redis_version(self) -> Tuple[int, ...]:
+        """
+        Return the connected Redis server version as a tuple of ints
+        (e.g. (7, 2, 4)), reading it from the ``INFO server`` section.
+        The result is cached for the lifetime of the instance.
+        """
+        if self._redis_version is None:
+            raw_version = self.redis_conn.info("server").get(
+                "redis_version", "0.0.0"
+            )
+            self._redis_version = tuple(
+                int(part) for part in str(raw_version).split(".")[:3]
+            )
+        return self._redis_version
+
+    def supports_xautoclaim(self) -> bool:
+        """Whether the connected Redis server supports the XAUTOCLAIM command."""
+        return self.get_redis_version() >= XAUTOCLAIM_MIN_VERSION
 
     def _create_consumer_group(self) -> None:
         """

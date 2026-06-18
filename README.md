@@ -18,9 +18,9 @@ pip3 install redis-streams
 ```
 
 ## Components
-Overview of the components
-![Redis Streams](https://tgrall.github.io/assets/images/redis-streams-101-img-1-2968c7ae8874c27aa176d161aa05a1d1.png "Redis Stream")
-*Image source: [tgrall.github.io](https://tgrall.github.io/blog/2019/09/02/getting-with-redis-streams-and-java)*
+Overview of the components showing all five key components: Producers, Redis Stream, Consumer Groups, Monitor, and Scaler.
+
+![Redis Streams Architecture](https://raw.githubusercontent.com/KissPeter/redis-streams/main/docs/images/redis-streams-architecture.png "Redis Streams Architecture")
 
 ### Producer
 As its name suggests, this component is responsible for providing the messages in the stream. Redis supports multiple producers.

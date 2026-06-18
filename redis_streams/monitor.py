@@ -2,7 +2,7 @@ import json
 import sys
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Awaitable, Union
+from typing import Any
 
 from redis import Redis
 from tabulate import tabulate
@@ -98,7 +98,30 @@ class Monitor(ConsumerAndMonitor):
         2. assign items to an active consumer
         3. remove consumer
 
-        TODO: 2 and 3 can be done by XAUTOCLAIM if Redis supports
+        Steps 1 and 2 are done by a single XAUTOCLAIM call when the connected
+        Redis server supports it (>= 6.2.0), otherwise we fall back to the
+        XPENDING + XCLAIM combination.
+        """
+        if self.supports_xautoclaim():
+            self.reassign_items_with_xautoclaim(
+                consumer_to_assign=self.consumer_to_assign,
+                consumer_to_delete=consumer_to_delete,
+            )
+        else:
+            self.reassign_items_with_xclaim(
+                pending_count=pending_count, consumer_to_delete=consumer_to_delete
+            )
+        # 3
+        resp = self.remove_consumer(consumer_to_delete=consumer_to_delete)
+        if resp > 0:
+            self.logger.error(f"{resp} messages lost")
+
+    def reassign_items_with_xclaim(
+        self, pending_count: int, consumer_to_delete: str
+    ) -> None:
+        """
+        Fallback path for Redis < 6.2.0: query the pending items of the
+        consumer (XPENDING) and assign them to an active consumer (XCLAIM).
         """
         # 1
         messages_to_cleanup = []
@@ -121,14 +144,62 @@ class Monitor(ConsumerAndMonitor):
                 f"Moved {len(messages_to_cleanup)} items from "
                 f"{consumer_to_delete} to {self.consumer_to_assign}"
             )
-        # 3
-        resp = self.remove_consumer(consumer_to_delete=consumer_to_delete)
-        if resp > 0:
-            self.logger.error(f"{resp} messages lost")
+
+    def reassign_items_with_xautoclaim(
+        self, consumer_to_assign: str, consumer_to_delete: str
+    ) -> None:
+        """
+        Transfer ownership of pending entries that are idle for at least
+        ``min_wait_time_ms`` to an active consumer using XAUTOCLAIM. The command
+        works in a SCAN-like fashion, so we iterate over the returned cursor
+        until all matching entries have been claimed.
+
+        Note: XAUTOCLAIM claims idle entries from the entire consumer group's PEL,
+        not just from a specific consumer. The consumer_to_delete parameter is
+        accepted for API consistency but XAUTOCLAIM cannot filter by source consumer.
+        This means it may claim messages from other consumers with idle messages,
+        which is typically acceptable during cleanup as it helps reassign all stale
+        work. For precise per-consumer cleanup, the XCLAIM fallback is used.
+
+        From Redis 7.0.0 the reply contains a third element listing the entries
+        that were deleted from the PEL (because they no longer exist in the
+        stream); those messages are considered lost and reported as errors.
+        """
+        start_id = "0-0"
+        total_claimed = 0
+        total_lost = 0
+        while True:
+            response = self.redis_conn.xautoclaim(
+                name=self.stream,
+                groupname=self.consumer_group,
+                consumername=consumer_to_assign,
+                min_idle_time=self.min_wait_time_ms,
+                start_id=start_id,
+                count=self.batch_size,
+            )
+            if not isinstance(response, (list, tuple)) or len(response) < 2:
+                break
+            next_cursor, claimed_messages = response[0], response[1]
+            if not isinstance(claimed_messages, list):
+                claimed_messages = []
+            total_claimed += len(claimed_messages)
+            if len(response) > 2:  # Redis >= 7.0.0
+                deleted_messages = response[2]
+                if isinstance(deleted_messages, list):
+                    total_lost += len(deleted_messages)
+            if not next_cursor or next_cursor in (b"0-0", "0-0"):
+                break
+            start_id = next_cursor
+        if total_claimed:
+            self.logger.debug(
+                f"Moved {total_claimed} items to {consumer_to_assign} via XAUTOCLAIM"
+            )
+        if total_lost:
+            self.logger.error(f"{total_lost} messages lost")
 
     def assign_items_to_active_consumer(
         self, items: list, group: str, consumer_to_assign: str
-    ) -> Union[Awaitable[Any], int]:
+    ) -> Any:
         return self.redis_conn.xclaim(
             name=self.stream,
             groupname=group,
@@ -145,13 +216,16 @@ class Monitor(ConsumerAndMonitor):
 
         for group in self.redis_conn.xinfo_groups(self.stream):
             group_name = group.get("name")
-            if group.get("consumers") > 0:
+            if not group_name:
+                continue
+            consumers_count = int(group.get("consumers") or 0)
+            if consumers_count > 0:
                 for consumer in self.redis_conn.xinfo_consumers(
                     name=self.stream, groupname=group_name
                 ):
-                    consumer_id = consumer.get("name")
-                    pending_items = consumer.get("pending", 0)
-                    idle = consumer.get("idle")
+                    consumer_id = str(consumer.get("name") or "")
+                    pending_items = int(consumer.get("pending") or 0)
+                    idle = int(consumer.get("idle") or 0)
                     status = self._get_status_by_metrics(
                         pending=pending_items, idle=idle
                     )
@@ -168,8 +242,8 @@ class Monitor(ConsumerAndMonitor):
                     self.collected_consumers_data.append(
                         ConsumerMetrics(
                             consumer_id=consumer_id,
-                            idle_time=consumer.get("idle"),
-                            pending_items=consumer.get("pending"),
+                            idle_time=idle,
+                            pending_items=pending_items,
                             status=status,
                         )
                     )

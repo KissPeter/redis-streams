@@ -1,11 +1,16 @@
 import pytest
 from redis import Redis
 
-from redis_streams_test.test_utils import STREAM, TEST_DATASET, set_logger
+from redis_streams_test.test_utils import (
+    STREAM,
+    TEST_DATASET,
+    get_redis_connection,
+    set_logger,
+)
 
 
 class TestBase:
-    redis_conn = Redis(decode_responses=True)
+    redis_conn: Redis = get_redis_connection()
     logger = set_logger()
 
     @pytest.fixture(autouse=True)

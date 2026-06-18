@@ -1,17 +1,16 @@
-flake8
-flake8-bugbear
-flake8-bandit
-flake8-black
-flake8-pylint
-flake8-isort
-vulture
-pylint-json2html
-mypy
+flake8==7.3.0
+flake8-bugbear==25.11.29
+flake8-bandit==4.1.1
+flake8-black==0.4.0
+flake8-pylint==0.2.1
+flake8-isort==7.0.0
+vulture==2.16
+pylint-json2html==0.5.0
+mypy==2.1.0
 
-pytest
-pytest
-pytest-cov
-pytest-html
-pytest-random-order
-pytest-ordering
+pytest==9.1.0
+pytest-cov==7.1.0
+pytest-html==4.2.0
+pytest-random-order==1.2.0
+pytest-ordering==0.6
 
