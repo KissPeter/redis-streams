@@ -84,7 +84,9 @@ class TestClaiming(TestBase):
         assert self._pending_count(consumer.consumer_id) == len(items)
         time.sleep(0.05)  # let the pending items become idle past min_wait_time_ms
 
-        monitor.reassign_items_with_xautoclaim(consumer_to_assign=ACTIVE_CONSUMER)
+        monitor.reassign_items_with_xautoclaim(
+            consumer_to_assign=ACTIVE_CONSUMER, consumer_to_delete=consumer.consumer_id
+        )
 
         assert self._pending_count(ACTIVE_CONSUMER) == len(items)
         assert self._pending_count(consumer.consumer_id) == 0
