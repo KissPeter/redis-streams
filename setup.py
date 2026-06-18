@@ -61,12 +61,12 @@ setup_options = dict(
     install_requires=get_requirements(),
     extras_require={
         "dev": [
-            "flake8",
-            "black",
-            "mypy",
-            "vulture",
-            "types-tabulate",
-            "types-requests",
+            "flake8==7.3.0",
+            "black==26.5.1",
+            "mypy==2.1.0",
+            "vulture==2.16",
+            "types-tabulate==0.10.0.20260508",
+            "types-requests==2.33.0.20260518",
         ]
     },
     license="GNU General Public License v3.0",
